@@ -15,7 +15,7 @@
     </div>
    
     <svg class="sequence-svg"
-    viewBox="0 0 800 150"
+    viewBox="0 0 800 175"
     preserveAspectRatio="xMidYMid meet"
   >
       <!-- Ligne principale -->
@@ -75,7 +75,18 @@
       <!-- Flèches pour les mismatches -->
       <template v-if="alleleSpecificPositionsResult?.mismatches">
         <g v-for="mismatch in alleleSpecificPositionsResult.mismatches" :key="'mismatch-'+mismatch.position">
-          <!-- Calcul la longueur de la flèche basée sur le score Grantham -->
+          <!-- Invisible wider hit area -->
+          <rect
+            :x="getXPosition(mismatch.position) - 10"
+            :y="80 - getArrowLength(mismatch.granthamScore)"
+            width="20"
+            :height="getArrowLength(mismatch.granthamScore)"
+            fill="transparent"
+            @mouseover="hoveredMismatch = mismatch"
+            @mouseout="hoveredMismatch = null"
+            class="arrow-hit-area"
+          />
+          <!-- Arrow line -->
           <line
             :x1="getXPosition(mismatch.position)"
             :y1="80 - getArrowLength(mismatch.granthamScore)"
@@ -85,23 +96,21 @@
             stroke-width="1"
             marker-end="url(#arrowhead)"
             class="mismatch-arrow"
-            @mouseover="hoveredMismatch = mismatch"
-            @mouseout="hoveredMismatch = null"
           />
           <!-- Info au survol -->
           <g v-if="hoveredMismatch === mismatch">
             <text
               :x="getXPosition(mismatch.position)"
-              :y="80 - getArrowLength(mismatch.granthamScore) - 15"
+              :y="0"
               text-anchor="middle"
-              font-size="9"
+              font-size="8"
               fill="#333333"
             >
-              <tspan>{{ mismatch.allele1.aminoAcid }} → {{ mismatch.allele2.aminoAcid }}</tspan>
+              <tspan>Pos. {{ mismatch.position }}: {{ mismatch.allele1.aminoAcid }} → {{ mismatch.allele2.aminoAcid }}</tspan>
               <tspan 
                 :x="getXPosition(mismatch.position)"
-                dy="11"
-              >Grantham Score: {{ mismatch.granthamScore }}</tspan>
+                dy="9"
+              >Gr. Score: {{ mismatch.granthamScore }}</tspan>
             </text>
           </g>
         </g>
@@ -200,11 +209,11 @@ export default {
   padding: 20px;
   margin-top: 20px;
   position: relative;
-  width: 100%;
+  width: 95%;
 }
 
 .sequence-svg {
-  width: 100%;
+  width: 98%;
   height: auto;
   display: block;
   max-width: 100%;
@@ -212,8 +221,8 @@ export default {
 
 .legend {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 15px;
+  right: 60px;
   background-color: rgba(255, 255, 255, 0.9);
   padding: 10px;
   border-radius: 4px;
@@ -242,12 +251,13 @@ export default {
   cursor: pointer;
 }
 
-.mismatch-arrow {
-  transition: stroke-width 0.2s;
+.arrow-hit-area {
+  pointer-events: all;
+  cursor: pointer;
 }
 
-.mismatch-arrow:hover {
-  stroke-width: 2;
+.mismatch-arrow {
+  pointer-events: none;
 }
 
 svg {
