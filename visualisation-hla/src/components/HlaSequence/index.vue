@@ -15,9 +15,11 @@
         <SequenceVisualization
           :positions="positions"
           :total-positions="Object.keys(positions).length"
+          :allele-specific-positions-result="alleleSpecificPositionsResult"
         />
       </div>
     </div>
+
   </template>
   
   <script>
@@ -33,28 +35,34 @@
       SequenceVisualization
     },
     setup() {
-      const {
-        loading,
-        error,
-        positions,
-        formParams,
-        updateParams,
-        initializeData,
-        calculatePositions
-      } = useHlaAnalysis();
-  
-      onMounted(() => {
-        initializeData();
-      });
-  
-      return {
-        loading,
-        error,
-        positions,
-        formParams,
-        updateParams,
-        calculatePositions
-      };
-    }
+  const {
+    loading,
+    error,
+    positions,
+    formParams,
+    updateParams,
+    initializeData,
+    calculatePositions,
+    aCsvData,  
+    bCsvData,
+    alleleSpecificPositionsResult,
+  } = useHlaAnalysis();
+
+  onMounted(() => {
+    initializeData();
+  });
+
+  return {
+    loading,
+    error,
+    positions,
+    formParams,
+    updateParams,
+    calculatePositions,
+    aCsvData,  // Ajoutez cette ligne
+    bCsvData,
+    alleleSpecificPositionsResult,   // Ajoutez cette ligne
   };
+}
+}
   </script>

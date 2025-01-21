@@ -1,18 +1,31 @@
 .form-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  display: flex;
+  flex-direction: column; /* Tout est aligné verticalement */
   gap: 20px;
   margin-bottom: 30px;
   background-color: white;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  max-width: 90%; /* Optionnel, pour limiter la largeur */
+  margin: 0 auto; /* Centrer le formulaire */
 }
 
+/* Style pour chaque ligne de champs */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  width: 100%;
+}
+
+/* Chaque champ du formulaire */
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1; /* Permet aux éléments de prendre la largeur disponible */
+  min-width: 250px; /* Empêche qu'ils deviennent trop petits */
 }
 
 .form-control {
@@ -29,6 +42,27 @@
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
+/* Partie spécifique pour les allèles optionnels */
+.optional-alleles {
+  display: flex;
+  flex-direction: column;
+  width: 20%; /* S'assurer que ça prend toute la largeur */
+  margin-top: 20px;
+}
+
+.alleles-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Bouton */
+.button-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
 .submit-button {
   padding: 12px 24px;
   background-color: #3498db;
@@ -37,13 +71,13 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 10px;
+  width: 200px;
 }
 
 .submit-button:hover:not(:disabled) {
   background-color: #2980b9;
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .submit-button:disabled {

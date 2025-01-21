@@ -1,0 +1,67 @@
+.collapsible-section {
+    margin: 1rem 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .collapse-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 4px;
+  }
+  
+  .collapse-header:hover {
+    background-color: #e9ecef;
+  }
+  
+  .arrow {
+    transition: transform 0.2s ease;
+    font-size: 16px;
+  }
+  
+  .arrow-down {
+    transform: rotate(90deg);
+  }
+  
+  .collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background-color: white;
+  }
+  
+  .collapse-content.show {
+    max-height: 500px; /* Ajustez selon vos besoins */
+    padding: 16px;
+    border-top: 1px solid #ddd;
+  }
+  
+  .alleles-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  .alleles-group .form-group {
+    margin: 0;
+  }
+  
+  input[type="text"].form-control {
+    height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+  }
+  
+  input[type="text"].form-control:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+  }

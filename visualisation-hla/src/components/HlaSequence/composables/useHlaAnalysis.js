@@ -4,7 +4,10 @@ import { HlaService } from '@/services/hlaService';
 
 export function useHlaAnalysis() {
   const csvData = ref([]);
+  const aCsvData = ref([]);
+  const bCsvData = ref([]);
   const positions = ref({});
+  const alleleSpecificPositionsResult = ref(null);
   const loading = ref(false);
   const error = ref(null);
   
@@ -13,13 +16,22 @@ export function useHlaAnalysis() {
     locus: 'A',
     distance: 3,
     percentage: 20,
-    interactionType: 'Peptide'
+    interactionType: 'Peptide',
+    allele1 : 'A*02:01',
+    allele2 : 'A*03:01'
   });
 
   async function initializeData() {
     loading.value = true;
     try {
-      csvData.value = await HlaService.loadData();
+      // Destructure the loaded data
+      const { A: aData, B: bData, mhcContacts } = await HlaService.loadData();
+      
+      // Store the data separately
+      csvData.value = mhcContacts;  // Default to mhc_contacts.csv
+      aCsvData.value = aData;
+      bCsvData.value = bData;
+      
       await calculatePositions();
     } catch (err) {
       error.value = err.message;
@@ -37,20 +49,41 @@ export function useHlaAnalysis() {
   async function calculatePositions() {
     console.log('Current params:', formParams);
     if (!csvData.value.length) return;
-
+   
     try {
-      const result = await HlaService.getPatchPosition(
+      const { positionWeighted, alleleSpecificPositions } = await HlaService.getPatchPosition(
         csvData.value,
         formParams.locus,
         formParams.distance,
-        0,
         formParams.percentage,
-        formParams.interactionType
+        formParams.interactionType,
+        formParams.allele1,
+        formParams.allele2,
+        aCsvData.value,
+        bCsvData.value
       );
-      positions.value = result;
+  
+      // Update positions
+      positions.value = positionWeighted;
       console.log('New positions calculated:', positions.value);
+     
+      // Update allele-specific positions
+      if (alleleSpecificPositions) {
+        console.log('Allele-specific positions:', alleleSpecificPositions);
+        alleleSpecificPositionsResult.value = alleleSpecificPositions;
+      } else {
+        // Reset if no results
+        alleleSpecificPositionsResult.value = null;
+      }
+   
     } catch (err) {
+      // Handle and log any errors
       error.value = err.message;
+      console.error('Error calculating positions:', err);
+      
+      // Reset values in case of error
+      positions.value = {};
+      alleleSpecificPositionsResult.value = null;
     }
   }
 
@@ -61,6 +94,10 @@ export function useHlaAnalysis() {
     formParams,
     updateParams,
     initializeData,
-    calculatePositions
+    calculatePositions,
+    // Ajoutez ces lignes si vous voulez y accéder
+    aCsvData,
+    bCsvData,
+    alleleSpecificPositionsResult
   };
 }
