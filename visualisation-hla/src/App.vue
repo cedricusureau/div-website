@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import HlaSequence from './components/HlaSequence/index.vue'
+import HlaSequence from './components/HlaSequence/HlaSequenceAnalysis.vue'
 
 export default {
   name: 'App',

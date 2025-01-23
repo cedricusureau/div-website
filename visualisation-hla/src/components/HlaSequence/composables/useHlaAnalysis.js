@@ -1,4 +1,3 @@
-// useHlaAnalysis.js
 import { ref, reactive } from 'vue';
 import { HlaService } from '@/services/hlaService';
 
@@ -10,15 +9,19 @@ export function useHlaAnalysis() {
   const alleleSpecificPositionsResult = ref(null);
   const loading = ref(false);
   const error = ref(null);
-  
+  const classicalDivergence = ref(null);
+  const specificDivergence = ref(null);
+  const filteredContactData = ref([]);
+  const totalStructure = ref(null);
+ 
   // État de formulaire local
   const formParams = reactive({
     locus: 'A',
     distance: 3,
     percentage: 20,
-    interactionType: 'Peptide',
-    allele1 : 'A*02:01',
-    allele2 : 'A*03:01'
+    interactionType: 'Peptide or TCR',
+    allele1: '',
+    allele2: ''
   });
 
   async function initializeData() {
@@ -26,12 +29,12 @@ export function useHlaAnalysis() {
     try {
       // Destructure the loaded data
       const { A: aData, B: bData, mhcContacts } = await HlaService.loadData();
-      
+     
       // Store the data separately
       csvData.value = mhcContacts;  // Default to mhc_contacts.csv
       aCsvData.value = aData;
       bCsvData.value = bData;
-      
+     
       await calculatePositions();
     } catch (err) {
       error.value = err.message;
@@ -40,7 +43,6 @@ export function useHlaAnalysis() {
     }
   }
 
-  // Fonction pour mettre à jour les paramètres
   function updateParams(newParams) {
     console.log('Updating params to:', newParams);
     Object.assign(formParams, newParams);
@@ -51,7 +53,7 @@ export function useHlaAnalysis() {
     if (!csvData.value.length) return;
    
     try {
-      const { positionWeighted, alleleSpecificPositions } = await HlaService.getPatchPosition(
+      const result = await HlaService.getPatchPosition(
         csvData.value,
         formParams.locus,
         formParams.distance,
@@ -62,28 +64,44 @@ export function useHlaAnalysis() {
         aCsvData.value,
         bCsvData.value
       );
-  
+
       // Update positions
-      positions.value = positionWeighted;
-      console.log('New positions calculated:', positions.value);
-     
+      positions.value = result.positionWeighted;
+      
+      // Store the new detailed data
+      filteredContactData.value = result.filteredData;
+
+      // Important : mettre à jour totalStructure avant de l'utiliser
+      const uniqueStructures = new Set(result.filteredData.map(d => d.Structure));
+      totalStructure.value = uniqueStructures.size;
+      
       // Update allele-specific positions
-      if (alleleSpecificPositions) {
-        console.log('Allele-specific positions:', alleleSpecificPositions);
-        alleleSpecificPositionsResult.value = alleleSpecificPositions;
+      if (result.alleleSpecificPositions) {
+        alleleSpecificPositionsResult.value = result.alleleSpecificPositions;
       } else {
-        // Reset if no results
         alleleSpecificPositionsResult.value = null;
       }
+      
+      // Update divergence values
+      classicalDivergence.value = result.classicalDivergence;
+      specificDivergence.value = result.specificDivergence;
+      
+      console.log('Analysis complete with details:', {
+        positions: positions.value,
+        contactData: filteredContactData.value,
+        dataLength: filteredContactData.value?.length || 0,
+      });
    
     } catch (err) {
-      // Handle and log any errors
       error.value = err.message;
       console.error('Error calculating positions:', err);
       
-      // Reset values in case of error
+      // Reset all values
       positions.value = {};
+      filteredContactData.value = null;
       alleleSpecificPositionsResult.value = null;
+      classicalDivergence.value = null;
+      specificDivergence.value = null;
     }
   }
 
@@ -95,9 +113,12 @@ export function useHlaAnalysis() {
     updateParams,
     initializeData,
     calculatePositions,
-    // Ajoutez ces lignes si vous voulez y accéder
     aCsvData,
     bCsvData,
-    alleleSpecificPositionsResult
+    alleleSpecificPositionsResult,
+    classicalDivergence,
+    specificDivergence,
+    filteredContactData,    
+    totalStructure
   };
 }
