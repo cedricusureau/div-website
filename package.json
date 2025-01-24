@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "ag-grid-community": "^33.0.4",
+    "ag-grid-enterprise": "^33.0.4",
+    "ag-grid-vue3": "^33.0.4",
     "papaparse": "^5.5.1"
   }
 }
