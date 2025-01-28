@@ -44,12 +44,10 @@ export function useHlaAnalysis() {
   }
 
   function updateParams(newParams) {
-    console.log('Updating params to:', newParams);
     Object.assign(formParams, newParams);
   }
 
   async function calculatePositions() {
-    console.log('Current params:', formParams);
     if (!csvData.value.length) return;
    
     try {
@@ -85,12 +83,6 @@ export function useHlaAnalysis() {
       // Update divergence values
       classicalDivergence.value = result.classicalDivergence;
       specificDivergence.value = result.specificDivergence;
-      
-      console.log('Analysis complete with details:', {
-        positions: positions.value,
-        contactData: filteredContactData.value,
-        dataLength: filteredContactData.value?.length || 0,
-      });
    
     } catch (err) {
       error.value = err.message;

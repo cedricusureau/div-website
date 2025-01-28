@@ -13,6 +13,182 @@ const search = ref('')
 const showColumnSettings = ref(false)
 const selected = ref([]) // Pour stocker les lignes sélectionnées
 
+// Dans la partie script existante, ajoutez après les autres imports :
+import * as d3 from 'd3';
+
+// Ajoutez ces computed properties
+const vdjdbStats = computed(() => {
+  if (!vdjdbData.value.length) return [];
+  
+  const counts = {};
+  vdjdbData.value.forEach(item => {
+    counts[item.Locus] = (counts[item.Locus] || 0) + 1;
+  });
+  
+  return Object.entries(counts).map(([name, value]) => ({
+    name,
+    value,
+    percentage: (value / vdjdbData.value.length) * 100
+  }));
+});
+
+const pdbStats = computed(() => {
+  if (!pdbData.value.length) return [];
+  
+  const counts = {};
+  pdbData.value.forEach(item => {
+    counts[item.Locus] = (counts[item.Locus] || 0) + 1;
+  });
+  
+  return Object.entries(counts).map(([name, value]) => ({
+    name,
+    value,
+    percentage: (value / pdbData.value.length) * 100
+  }));
+});
+
+// Ajoutez une fonction pour créer les camemberts
+const createPieChart = (data, containerId) => {
+  // Clear previous chart
+  d3.select(`#${containerId}`).selectAll('*').remove();
+
+  const width = 300;
+  const height = 300;
+  const radius = Math.min(width, height) / 2 * 0.8;
+
+  const color = d3.scaleOrdinal()
+    .domain(data.map(d => d.name))
+    .range(['#6366f1', '#10b981', '#f59e0b', '#ef4444']);
+
+  // Créer un div pour le tooltip
+  const tooltip = d3.select("body")
+    .append("div")
+    .attr("class", "d3-tooltip")
+    .style("position", "absolute")
+    .style("visibility", "hidden")
+    .style("background-color", "white")
+    .style("border", "solid 1px #ccc")
+    .style("border-radius", "5px")
+    .style("padding", "10px")
+    .style("font-size", "12px")
+    .style("box-shadow", "0 0 10px rgba(0,0,0,0.1)")
+    .style("pointer-events", "none");
+
+  const svg = d3.select(`#${containerId}`)
+    .append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .append('g')
+    .attr('transform', `translate(${width / 2},${height / 2})`);
+
+  const pie = d3.pie()
+    .value(d => d.value)
+    .sort(null);
+
+  const arc = d3.arc()
+    .innerRadius(0)
+    .outerRadius(radius);
+
+  // Arc plus grand pour placer les labels
+  const labelArc = d3.arc()
+    .innerRadius(radius * 0.6)
+    .outerRadius(radius * 0.6);
+
+  const arcs = svg.selectAll('arc')
+    .data(pie(data))
+    .enter()
+    .append('g')
+    .attr('class', 'arc');
+
+  // Ajouter les sections avec interactions
+  arcs.append('path')
+    .attr('d', arc)
+    .attr('fill', d => color(d.data.name))
+    .attr('stroke', 'white')
+    .style('stroke-width', '2px')
+    .style('cursor', 'pointer')
+    .on('mouseover', function(event, d) {
+      d3.select(this)
+        .style('opacity', 0.8);
+      tooltip
+        .style("visibility", "visible")
+        .html(`${d.data.name}<br>${d.data.value} (${d.data.percentage.toFixed(1)}%)`);
+    })
+    .on('mousemove', function(event) {
+      tooltip
+        .style("top", (event.pageY - 10) + "px")
+        .style("left", (event.pageX + 10) + "px");
+    })
+    .on('mouseout', function() {
+      d3.select(this)
+        .style('opacity', 1);
+      tooltip
+        .style("visibility", "hidden");
+    });
+
+  // Ajouter les labels
+  arcs.append('text')
+    .attr('transform', d => {
+      // Ne montrer le texte que pour les sections assez grandes
+      if (d.data.percentage < 7) return 'translate(-1000,-1000)'; // Hors de vue
+      
+      const pos = labelArc.centroid(d);
+      return `translate(${pos})`;
+    })
+    .attr('dy', '0.35em')
+    .style('text-anchor', 'middle')
+    .style('font-size', '11px')
+    .style('fill', '#333')
+    .text(d => `${d.data.name}`);
+
+  // Cleanup function
+  return () => {
+    tooltip.remove();
+  };
+};
+
+const vdjdbMhcStats = computed(() => {
+  if (!vdjdbData.value.length) return [];
+  
+  const statsByLocus = {};
+  vdjdbData.value.forEach(item => {
+    if (!statsByLocus[item.Locus]) {
+      statsByLocus[item.Locus] = {};
+    }
+    statsByLocus[item.Locus][item.MHC] = (statsByLocus[item.Locus][item.MHC] || 0) + 1;
+  });
+  
+  return Object.entries(statsByLocus).map(([locus, mhcCounts]) => ({
+    locus,
+    counts: Object.entries(mhcCounts).map(([mhc, count]) => ({
+      name: mhc,
+      value: count,
+      percentage: (count / vdjdbData.value.length) * 100
+    }))
+  }));
+});
+
+const pdbMhcStats = computed(() => {
+  if (!pdbData.value.length) return [];
+  
+  const statsByLocus = {};
+  pdbData.value.forEach(item => {
+    if (!statsByLocus[item.Locus]) {
+      statsByLocus[item.Locus] = {};
+    }
+    statsByLocus[item.Locus][item.MHC] = (statsByLocus[item.Locus][item.MHC] || 0) + 1;
+  });
+  
+  return Object.entries(statsByLocus).map(([locus, mhcCounts]) => ({
+    locus,
+    counts: Object.entries(mhcCounts).map(([mhc, count]) => ({
+      name: mhc,
+      value: count,
+      percentage: (count / pdbData.value.length) * 100
+    }))
+  }));
+});
+
 // Watch pour logger les éléments sélectionnés
 watch(selected, (newSelection) => {
   console.log('Selected structures:', newSelection)
@@ -88,6 +264,30 @@ const loadAllData = async () => {
   }
 }
 
+watch(
+  [vdjdbStats, pdbStats, vdjdbMhcStats, pdbMhcStats, activeTab],
+  ([newVdjdbStats, newPdbStats, newVdjdbMhcStats, newPdbMhcStats, newTab]) => {
+    if (newTab === 'stats') {
+      // Supprimer tous les tooltips existants avant de recréer les graphiques
+      d3.selectAll('.d3-tooltip').remove();
+      
+      setTimeout(() => {
+        // Graphiques de distribution Locus
+        createPieChart(newVdjdbStats, 'vdjdb-pie');
+        createPieChart(newPdbStats, 'pdb-pie');
+        
+        // Graphiques MHC par Locus
+        newVdjdbMhcStats.forEach(stat => {
+          createPieChart(stat.counts, `vdjdb-mhc-${stat.locus}`);
+        });
+        
+        newPdbMhcStats.forEach(stat => {
+          createPieChart(stat.counts, `pdb-mhc-${stat.locus}`);
+        });
+      }, 0);
+    }
+  }
+);
 // Method to open PDB link
 // Import JSZip at the top of your file after other imports
 import JSZip from 'jszip'
@@ -172,6 +372,7 @@ const exportToCSV = (data, filename) => {
 // Computed property pour le nom du fichier d'export
 const exportFileName = computed(() => `${activeTab.value}_data_${new Date().toISOString().split('T')[0]}.csv`)
 
+
 // Fonction d'export qui sera utilisée dans le template
 const handleExport = () => {
   const data = activeTab.value === 'vdjdb' ? vdjdbData.value : pdbData.value
@@ -206,12 +407,15 @@ onMounted(() => {
           <v-tab value="pdb">
             PDB ({{ pdbData.length }})
           </v-tab>
+          <v-tab value="stats">
+          Statistics
+        </v-tab>
         </v-tabs>
       </v-col>
     </v-row>
 
     <v-row>
-      <v-col cols="12" class="d-flex align-center gap-4">
+      <v-col cols="12" class="d-flex align-center gap-4" v-if="activeTab !== 'stats'">
         <v-text-field
           v-model="search"
           label="Search"
@@ -382,7 +586,61 @@ onMounted(() => {
           </template>
         </v-data-table>
       </v-window-item>
-    </v-window>
+
+      <v-window-item value="stats">
+  <v-row>
+    <!-- Locus Distribution -->
+    <v-col cols="12" md="6">
+      <v-card>
+        <v-card-title>VDJdb Locus Distribution</v-card-title>
+        <v-card-text>
+          <div class="chart-container">
+            <div id="vdjdb-pie" style="width: 100%; height: 300px;"></div>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-col>
+    
+    <v-col cols="12" md="6">
+      <v-card>
+        <v-card-title>PDB Locus Distribution</v-card-title>
+        <v-card-text>
+          <div class="chart-container">
+            <div id="pdb-pie" style="width: 100%; height: 300px;"></div>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-col>
+
+    <!-- MHC Distribution par Locus -->
+    <template v-for="stat in vdjdbMhcStats" :key="stat.locus">
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title>VDJdb MHC Distribution - {{ stat.locus }}</v-card-title>
+          <v-card-text>
+            <div class="chart-container">
+              <div :id="`vdjdb-mhc-${stat.locus}`" style="width: 100%; height: 300px;"></div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </template>
+
+    <template v-for="stat in pdbMhcStats" :key="stat.locus">
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title>PDB MHC Distribution - {{ stat.locus }}</v-card-title>
+          <v-card-text>
+            <div class="chart-container">
+              <div :id="`pdb-mhc-${stat.locus}`" style="width: 100%; height: 300px;"></div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </template>
+  </v-row>
+</v-window-item>
+</v-window>
   </v-container>
 </template>
 
@@ -394,4 +652,12 @@ onMounted(() => {
 .gap-4 {
   gap: 1rem;
 }
+
+.chart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
 </style>

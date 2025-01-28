@@ -144,6 +144,13 @@
     <!-- Bouton analyse -->
     <div class="button-wrapper">
       <button
+        @click="openBatchAnalysis"
+        class="batch-button"
+        :disabled="loading"
+      >
+        Batch Analysis
+      </button>
+      <button
         @click="$emit('analyze')"
         class="submit-button"
         :disabled="loading"
@@ -256,7 +263,16 @@ export default {
         this.showSuggestions = null;
         this.currentInput = '';
       }, 200);
-    }
+    },
+    openBatchAnalysis() {
+    const currentParams = {
+      locus: this.formParams.locus,
+      distance: this.formParams.distance,
+      percentage: this.formParams.percentage,
+      interactionType: this.formParams.interactionType
+    };
+    this.$emit('open-batch-analysis', currentParams);
+  },
   },
   computed: {
     filteredAlleles() {
@@ -419,4 +435,31 @@ label {
   border-color: #dc3545;
   box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
+
+.button-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.batch-button {
+  padding: 0.75rem 2rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.batch-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.batch-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 </style>

@@ -1,51 +1,69 @@
-# App.vue
+<!-- App.vue -->
 <template>
-  <v-app> 
-  <div id="app">
-    <h1>HLA-TCR Structures Database</h1>
-    
-    <!-- Boutons de navigation simple -->
-    <div class="nav-buttons">
-      <button 
-        @click="currentView = 'sequence'"
-        :class="{ active: currentView === 'sequence' }"
-      >
-        Sequence Analysis
-      </button>
-      <button 
-        @click="currentView = 'structures'"
-        :class="{ active: currentView === 'structures' }"
-      >
-        Structures Database
-      </button>
+  <v-app>
+    <div id="app">
+      <h1>HLA-TCR Structures Database</h1>
+   
+      <!-- Boutons de navigation simple -->
+      <div class="nav-buttons">
+        <button
+          @click="currentView = 'sequence'"
+          :class="{ active: currentView === 'sequence' }"
+        >
+          Sequence Analysis
+        </button>
+        <button
+          @click="currentView = 'structures'"
+          :class="{ active: currentView === 'structures' }"
+        >
+          Structures Database
+        </button>
+      </div>
+      <!-- Composants -->
+      <div class="component-container">
+        <HlaSequence 
+          v-if="currentView === 'sequence'" 
+          @switch-to-batch="switchToBatch"
+        />
+        <HlaStructuresView v-if="currentView === 'structures'" />
+        <BatchAnalysis 
+          v-if="currentView === 'batch'"
+          :analysisParams="batchParams"
+          @back-to-sequence="currentView = 'sequence'"
+        />
+      </div>
     </div>
-
-    <!-- Composants -->
-    <div class="component-container">
-      <HlaSequence v-if="currentView === 'sequence'" />
-      <HlaStructuresView v-if="currentView === 'structures'" />
-    </div>
-  </div>
-</v-app>
+  </v-app>
 </template>
 
 <script>
 import { ref } from 'vue'
 import HlaSequence from './components/HlaSequence/HlaSequenceAnalysis.vue'
 import HlaStructuresView from './components/HlaStructures/HlaStructuresView.vue'
+import BatchAnalysis from './components/HlaSequence/components/BatchAnalysis.vue'
 
 export default {
   name: 'App',
   components: {
     HlaSequence,
-    HlaStructuresView
+    HlaStructuresView,
+    BatchAnalysis
   },
   setup() {
-    const currentView = ref('sequence')
-    return {
-      currentView
-    }
-  }
+  const currentView = ref('sequence');
+  const batchParams = ref(null);
+  
+  const switchToBatch = (data) => {
+    batchParams.value = {...data};  // Make a shallow copy
+    currentView.value = 'batch';
+  };
+
+  return {
+    currentView,
+    batchParams,
+    switchToBatch
+  };
+}
 }
 </script>
 

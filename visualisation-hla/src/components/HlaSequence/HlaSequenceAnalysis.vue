@@ -10,6 +10,7 @@
         :loading="loading"
         @update:formParams="updateParams"
         @analyze="calculatePositions"
+        @open-batch-analysis="handleBatchAnalysis"
       />
       <SequenceVisualization
         :positions="positions"
@@ -35,6 +36,7 @@ import { useHlaAnalysis } from './composables/useHlaAnalysis';
 import HlaAnalysisForm from './components/HlaAnalysisForm.vue';
 import SequenceVisualization from './components/SequenceVisualization.vue';
 import ContactDataTable from './components/ContactDataTable.vue';
+
 export default {
   name: 'HlaSequence',
   components: {
@@ -42,7 +44,8 @@ export default {
     SequenceVisualization,
     ContactDataTable
   },
-  setup() {
+  emits: ['switch-to-batch'],
+  setup(props, { emit }) {
     const {
       loading,
       error,
@@ -60,24 +63,47 @@ export default {
       positionDetails,
       totalStructure
     } = useHlaAnalysis();
+
     // État pour suivre la position sélectionnée
     const selectedPosition = ref(null);
+
     // Computed property pour filtrer les données en fonction de la position sélectionnée
     const filteredContactDataByPosition = computed(() => {
-  if (!selectedPosition.value) {
-    return filteredContactData.value;
-  }
-  return filteredContactData.value.filter(contact =>
-    String(contact.ResidueID) === String(selectedPosition.value)
-  );
-});
+      if (!selectedPosition.value) {
+        return filteredContactData.value;
+      }
+      return filteredContactData.value.filter(contact =>
+        String(contact.ResidueID) === String(selectedPosition.value)
+      );
+    });
+
+// In HlaSequenceAnalysis.vue
+const handleBatchAnalysis = async () => {
+  console.log('Starting batch analysis');
+  await calculatePositions();
+ 
+  const batchData = {
+    locus: formParams.locus,        // Access directly from the proxy
+    distance: formParams.distance,
+    percentage: formParams.percentage,
+    interactionType: formParams.interactionType,
+    positions: Object.assign({}, positions.value),
+    aCsv :  aCsvData.value,
+    bCsv: bCsvData.value    
+  };
+  
+  console.log('Emitting batch data:', batchData);
+  emit('switch-to-batch', batchData);
+};
     // Gestionnaire pour la sélection de position
     const handlePositionSelection = (position) => {
       selectedPosition.value = position;
     };
+
     onMounted(() => {
       initializeData();
     });
+
     return {
       loading,
       error,
@@ -94,8 +120,9 @@ export default {
       positionDetails,
       handlePositionSelection,
       totalStructure,
-      selectedPosition
+      selectedPosition,
+      handleBatchAnalysis
     };
   }
-}
+};
 </script>
