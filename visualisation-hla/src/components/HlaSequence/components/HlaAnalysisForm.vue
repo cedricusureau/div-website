@@ -155,7 +155,7 @@
         class="submit-button"
         :disabled="loading"
       >
-        Analyze Interactions
+        Explore HLA-TCR interactions
       </button>
     </div>
   </div>
