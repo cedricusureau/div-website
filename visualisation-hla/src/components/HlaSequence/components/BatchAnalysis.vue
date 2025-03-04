@@ -112,12 +112,14 @@ import { BatchProcessor } from '@/services/batchProcessor';
         this.isInstructionsOpen = !this.isInstructionsOpen;
       },
       validatePair(pair) {
-        const parts = pair.split(/[\s,;]+/).filter(part => part.length > 0);
-        if (parts.length !== 2) return false;
-        
-        const hlaFormat = new RegExp(`^${this.analysisParams.locus}\\*\\d{2}:\\d{2}$`);
-        return parts.every(part => hlaFormat.test(part.trim()));
-      },
+  // Split using any combination of spaces, commas, semicolons, or tabs
+  const parts = pair.split(/[\s,;\t]+/).filter(part => part.length > 0);
+  if (parts.length !== 2) return false;
+  
+  // Updated regex to allow for variable number of digits after the colon
+  const hlaFormat = new RegExp(`^${this.analysisParams.locus}\\*\\d{2}:\\d{1,}$`);
+  return parts.every(part => hlaFormat.test(part.trim()));
+},
       async analyzePairs() {
   const validPairs = this.hlaPairs
     .filter(pair => this.validatePair(pair))
