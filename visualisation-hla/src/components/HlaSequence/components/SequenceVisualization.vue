@@ -76,7 +76,7 @@
         </text>
       </g>
 
-      <!-- Flèches pour les mismatches -->
+<!-- Flèches pour les mismatches -->
 <template v-if="alleleSpecificPositionsResult?.mismatches">
   <g v-for="mismatch in alleleSpecificPositionsResult.mismatches" :key="'mismatch-'+mismatch.position">
     <g class="arrow-group">
@@ -166,47 +166,78 @@
     </svg>
 
     <div class="divergence-info" v-if="classicalDivergence !== null || specificDivergence !== null">
-  <div class="divergence-container">
-    <div class="divergence-item">
-      <span class="divergence-label">Classical Divergence (HED):</span>
-      <span class="divergence-value">{{ classicalDivergence !== null ? classicalDivergence.toFixed(2) : 'N/A' }}</span>
+      <div class="divergence-container">
+        <div class="divergence-item">
+          <span class="divergence-label">Classical Divergence (HED):</span>
+          <span class="divergence-value">{{ classicalDivergence !== null ? classicalDivergence.toFixed(2) : 'N/A' }}</span>
+        </div>
+        <div class="divergence-item">
+          <span class="divergence-label">Specific Divergence:</span>
+          <span class="divergence-value">{{ specificDivergence !== null ? specificDivergence.toFixed(2) : 'N/A' }}</span>
+        </div>
+      </div>
     </div>
-    <div class="divergence-item">
-      <span class="divergence-label">Specific Divergence:</span>
-      <span class="divergence-value">{{ specificDivergence !== null ? specificDivergence.toFixed(2) : 'N/A' }}</span>
-    </div>
-  </div>
-</div>
     
+    <!-- Section de l'accordéon pour les interactions peptidiques -->
+    <div class="peptide-interactions-section" v-if="Object.keys(positions).length > 0" ref="accordionSection">
+      <div class="accordion-header" @click="togglePeptideInteractions">
+        <span class="accordion-title">Peptide Interactions</span>
+        <span class="accordion-icon">{{ showPeptideInteractions ? '▲' : '▼' }}</span>
+      </div>
+      
+      <transition name="slide">
+        <div v-if="showPeptideInteractions" class="accordion-content">
+          <PeptideInteractionsSankey 
+            :filteredContactData="filteredContactData"
+            :selectedPositions="selectedPositionsList"
+            :totalStructures="totalStructure"
+          />
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
 <script>
+import PeptideInteractionsSankey from './PeptideInteractionsSankey.vue';
+
 export default {
   name: 'SequenceVisualization',
+  components: {
+    PeptideInteractionsSankey
+  },
   props: {
-  positions: {
-    type: Object,
-    required: true
+    positions: {
+      type: Object,
+      required: true
+    },
+    alleleSpecificPositionsResult: {
+      type: Object,
+      default: () => ({})
+    },
+    classicalDivergence: {
+      type: Number,
+      default: null
+    },
+    specificDivergence: {
+      type: Number,
+      default: null
+    },
+    filteredContactData: {
+      type: Array,
+      default: () => []
+    },
+    totalStructure: {  // Ajout de cette prop si elle n'existe pas déjà
+      type: Number,
+      default: 0
+    },
   },
-  alleleSpecificPositionsResult: {
-    type: Object,
-    default: () => ({})
-  },
-  classicalDivergence: {
-    type: Number,
-    default: null
-  },
-  specificDivergence: {
-    type: Number,
-    default: null
-  }
-},
   data() {
     return {
       hoveredPosition: null,
       hoveredMismatch: null,
-      selectedPosition: null, 
+      selectedPosition: null,
+      showPeptideInteractions: false,
       colorMap: {
         'Peptide': '#FF6B6B',     // Rouge doux
         'TCR': '#4ECDC4',         // Turquoise
@@ -214,10 +245,43 @@ export default {
       }
     }
   },
+  computed: {
+    selectedPositionsList() {
+      return Object.keys(this.positions);
+    }
+  },
   methods: {
     handleClick(position) {
-    this.selectedPosition = position;
-    this.$emit('position-selected', position);
+      this.selectedPosition = position;
+      this.$emit('position-selected', position);
+    },
+    togglePeptideInteractions() {
+      this.showPeptideInteractions = !this.showPeptideInteractions;
+      
+      // Si l'accordéon s'ouvre, planifier un défilement vers cette section
+      if (this.showPeptideInteractions) {
+        this.$nextTick(() => {
+          this.scrollToAccordion();
+        });
+      }
+    },
+    scrollToAccordion() {
+      // Attendre un court délai pour permettre à l'animation de transition de commencer
+      setTimeout(() => {
+        if (this.$refs.accordionSection) {
+          // Calculer la position de défilement
+          const element = this.$refs.accordionSection;
+          const elementRect = element.getBoundingClientRect();
+          const absoluteElementTop = elementRect.top + window.pageYOffset;
+          const middle = absoluteElementTop - (window.innerHeight / 4);
+          
+          // Défiler en douceur vers l'accordéon
+          window.scrollTo({
+            top: middle,
+            behavior: 'smooth'
+          });
+        }
+      }, 150);
     },
     getColorForType(type) {
       return this.colorMap[type] || '#999999';
@@ -238,23 +302,23 @@ export default {
       const minLength = 15;
       const maxLength = 75;
       const maxScore = 215;
-      
+     
       return minLength + (score / maxScore) * (maxLength - minLength);
     },
     getArrowHitPath(position, granthamScore) {
-    const x = this.getXPosition(position);
-    const length = this.getArrowLength(granthamScore);
-    const y1 = 75;  // Position basse de la flèche
-    const y2 = 80 - length;  // Position haute de la flèche
-    
-    // Créer un path qui entoure la flèche avec une marge de 5px
-    return `
-      M ${x - 3} ${y1}
-      L ${x - 3} ${y2}
-      C ${x - 3} ${y2 - 5}, ${x + 3} ${y2 - 5}, ${x + 3} ${y2}
-      L ${x + 3} ${y1}
-      Z`;},
-
+      const x = this.getXPosition(position);
+      const length = this.getArrowLength(granthamScore);
+      const y1 = 75;  // Position basse de la flèche
+      const y2 = 80 - length;  // Position haute de la flèche
+     
+      // Créer un path qui entoure la flèche avec une marge de 5px
+      return `
+        M ${x - 3} ${y1}
+        L ${x - 3} ${y2}
+        C ${x - 3} ${y2 - 5}, ${x + 3} ${y2 - 5}, ${x + 3} ${y2}
+        L ${x + 3} ${y1}
+        Z`;
+    },
     isPositionSelected(position) {
       return position in this.positions;
     },
@@ -276,6 +340,7 @@ export default {
   margin-top: 20px;
   position: relative;
   width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .legend-container {
@@ -287,13 +352,14 @@ export default {
 .legend {
   background-color: rgba(255, 255, 255, 0.9);
   padding: 8px 16px;
-  border-radius: 2px;
-  border: 2px solid #ddd;
+  border-radius: 4px;
+  border: 1px solid #eee;
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   justify-content: center;
   align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .legend-item {
@@ -323,8 +389,13 @@ export default {
 }
 
 .position-point {
-  transition: r 0.2s;
+  transition: r 0.2s, stroke-width 0.2s;
   cursor: pointer;
+}
+
+.position-point:hover {
+  stroke: #333;
+  stroke-width: 1.5;
 }
 
 .arrow-hit-area {
@@ -369,5 +440,56 @@ svg {
   font-size: 16px;
   color: #333;
   font-weight: 600;
+}
+
+/* Style pour l'accordéon */
+.peptide-interactions-section {
+  margin-top: 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.accordion-header:hover {
+  background-color: #e9ecef;
+}
+
+.accordion-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #4a90e2;
+}
+
+.accordion-icon {
+  font-size: 14px;
+  color: #4a90e2;
+}
+
+.accordion-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Animation de transition pour l'accordéon */
+.slide-enter-active, .slide-leave-active {
+  transition: max-height 0.3s ease-out;
+  max-height: 1000px;
+  overflow: hidden;
+}
+
+.slide-enter-from, .slide-leave-to {
+  max-height: 0;
+  overflow: hidden;
 }
 </style>

@@ -11,15 +11,17 @@
         @update:formParams="updateParams"
         @analyze="calculatePositions"
         @open-batch-analysis="handleBatchAnalysis"
-      />
-      <SequenceVisualization
-        :positions="positions"
-        :total-positions="Object.keys(positions).length"
-        :allele-specific-positions-result="alleleSpecificPositionsResult"
-        :classical-divergence="classicalDivergence"
-        :specific-divergence="specificDivergence"
-        @position-selected="handlePositionSelection"
-      />
+      />  
+<SequenceVisualization
+  :positions="positions"
+  :total-positions="Object.keys(positions).length"
+  :allele-specific-positions-result="alleleSpecificPositionsResult"
+  :classical-divergence="classicalDivergence"
+  :specific-divergence="specificDivergence"
+  :filtered-contact-data="filteredContactDataByPosition" 
+  :totalStructure="totalStructure"  
+  @position-selected="handlePositionSelection"
+/>
       <ContactDataTable
       v-if="selectedPosition"
       :filtered-contact-data="filteredContactDataByPosition"

@@ -40,7 +40,7 @@ export class HlaService {
       const [csvTextA, csvTextB, csvTextMhc] = await Promise.all([
         fetchCSV('A.csv'),
         fetchCSV('B.csv'),
-        fetchCSV('mhc_contacts_2.csv')
+        fetchCSV('mhc_contacts_peptides.csv')
       ]);
 
       // Fonction de parsing optimisée
