@@ -53,17 +53,17 @@
       <!-- Points des positions trouvées avec hover -->
         <g v-for="(type, position) in positions" :key="position">
           <circle
-          :cx="50 + (position * 700/180)"
-          cy="80"
-          :r="selectedPosition === position ? 6 : 4"  
-          :fill="getColorForType(type)"
-          :stroke="selectedPosition === position ? '#333' : 'none'" 
-          stroke-width="2"
-          @mouseover="showTooltip(position, type)"
-          @mouseout="hideTooltip"
-          @click="handleClick(position)"
-          class="position-point"
-        />
+  :cx="50 + (position * 700/180)"
+  cy="80"
+  :r="selectedPositions.includes(position) ? 6 : 4"  
+  :fill="getColorForType(type)"
+  :stroke="selectedPositions.includes(position) ? '#333' : 'none'" 
+  stroke-width="2"
+  @mouseover="showTooltip(position, type)"
+  @mouseout="hideTooltip"
+  @click="handleClick(position)"
+  class="position-point"
+/>
         <text
           v-if="hoveredPosition === position"
           :x="50 + (position * 700/180)"
@@ -181,17 +181,17 @@
     <!-- Section de l'accordéon pour les interactions peptidiques -->
     <div class="peptide-interactions-section" v-if="Object.keys(positions).length > 0" ref="accordionSection">
       <div class="accordion-header" @click="togglePeptideInteractions">
-        <span class="accordion-title">Peptide Interactions</span>
+        <span class="accordion-title">Interactions Details</span>
         <span class="accordion-icon">{{ showPeptideInteractions ? '▲' : '▼' }}</span>
       </div>
       
       <transition name="slide">
         <div v-if="showPeptideInteractions" class="accordion-content">
           <PeptideInteractionsSankey 
-            :filteredContactData="filteredContactData"
-            :selectedPositions="selectedPositionsList"
-            :totalStructures="totalStructure"
-          />
+  :filteredContactData="filteredContactData"
+  :selectedPositions="selectedPositionsForSankey"
+  :totalStructures="totalStructure"
+/>
         </div>
       </transition>
     </div>
@@ -233,28 +233,53 @@ export default {
     },
   },
   data() {
-    return {
-      hoveredPosition: null,
-      hoveredMismatch: null,
-      selectedPosition: null,
-      showPeptideInteractions: false,
-      colorMap: {
-        'Peptide': '#FF6B6B',     // Rouge doux
-        'TCR': '#4ECDC4',         // Turquoise
-        'Peptide + TCR': '#A78ADB' // Violet doux
-      }
+  return {
+    hoveredPosition: null,
+    hoveredMismatch: null,
+    selectedPositions: [], // Changé de selectedPosition à selectedPositions
+    showPeptideInteractions: false,
+    colorMap: {
+      'Peptide': '#FF6B6B',     // Rouge doux
+      'TCR': '#4ECDC4',         // Turquoise
+      'Peptide + TCR': '#A78ADB' // Violet doux
     }
+  }
+},
+computed: {
+  selectedPositionsList() {
+    return Object.keys(this.positions);
   },
-  computed: {
-    selectedPositionsList() {
-      return Object.keys(this.positions);
-    }
-  },
+  // Ajoutez cette computed property pour les positions sélectionnées
+  selectedPositionsForSankey() {
+
+    console.log("filteredContactData length:", this.filteredContactData.length);
+    // Si aucune position n'est sélectionnée, utilisez toutes les positions
+    return this.selectedPositions.length > 0 
+      ? this.selectedPositions 
+      : Object.keys(this.positions);
+  }
+},
   methods: {
     handleClick(position) {
-      this.selectedPosition = position;
-      this.$emit('position-selected', position);
-    },
+  // Convertir la position en chaîne de caractères pour assurer la cohérence
+  const positionStr = String(position);
+  
+  // Vérifier si la position est déjà sélectionnée
+  const index = this.selectedPositions.indexOf(positionStr);
+  
+  if (index !== -1) {
+    // Si oui, la retirer du tableau
+    const newSelection = [...this.selectedPositions];
+    newSelection.splice(index, 1);
+    this.selectedPositions = newSelection;
+  } else {
+    // Sinon, l'ajouter au tableau
+    this.selectedPositions = [...this.selectedPositions, positionStr];
+  }
+  
+  // Émettre l'événement avec le tableau de positions sélectionnées
+  this.$emit('positions-selected', this.selectedPositions);
+},
     togglePeptideInteractions() {
       this.showPeptideInteractions = !this.showPeptideInteractions;
       

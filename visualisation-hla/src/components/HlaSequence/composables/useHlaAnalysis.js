@@ -1,11 +1,13 @@
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { HlaService } from '@/services/hlaService';
+import { EntropyService } from '@/services/entropyService';
 
 export function useHlaAnalysis() {
   const csvData = ref([]);
   const aCsvData = ref([]);
   const bCsvData = ref([]);
   const positions = ref({});
+  const rawPositions = ref({}); // Stocke toutes les positions avant filtrage
   const alleleSpecificPositionsResult = ref(null);
   const loading = ref(false);
   const error = ref(null);
@@ -13,6 +15,10 @@ export function useHlaAnalysis() {
   const specificDivergence = ref(null);
   const filteredContactData = ref([]);
   const totalStructure = ref(null);
+  const entropyData = ref({
+    A: {},
+    B: {}
+  });
  
   // État de formulaire local
   const formParams = reactive({
@@ -21,20 +27,43 @@ export function useHlaAnalysis() {
     percentage: 20,
     interactionType: 'Peptide or TCR',
     allele1: '',
-    allele2: ''
+    allele2: '',
+    showPolymorphicOnly: true,
+    entropyThreshold: 0.2
+  });
+
+  // Computed pour les positions filtrées par entropie
+  const filteredPositions = computed(() => {
+    if (!formParams.showPolymorphicOnly) {
+      return rawPositions.value;
+    }
+    
+    const locusEntropyData = entropyData.value[formParams.locus] || {};
+    const threshold = formParams.entropyThreshold; // Utiliser le seuil paramétrable
+    
+    return Object.entries(rawPositions.value).reduce((filtered, [position, type]) => {
+      const entropy = locusEntropyData[position];
+      // Inclure seulement si l'entropie est définie et >= seuil
+      if (entropy !== undefined && entropy >= threshold) {
+        filtered[position] = type;
+      }
+      return filtered;
+    }, {});
   });
 
   async function initializeData() {
     loading.value = true;
     try {
-      // Destructure the loaded data
+      // Charger les données HLA
       const { A: aData, B: bData, mhcContacts } = await HlaService.loadData();
-     
-      // Store the data separately
-      csvData.value = mhcContacts;  // Default to mhc_contacts.csv
+      csvData.value = mhcContacts;
       aCsvData.value = aData;
       bCsvData.value = bData;
-     
+      
+      // Charger les données d'entropie
+      const entropyDataResult = await EntropyService.loadEntropyData();
+      entropyData.value = entropyDataResult;
+      
       await calculatePositions();
     } catch (err) {
       error.value = err.message;
@@ -45,6 +74,11 @@ export function useHlaAnalysis() {
 
   function updateParams(newParams) {
     Object.assign(formParams, newParams);
+    
+    // Si nous changeons le filtrage d'entropie ou le seuil, mettre à jour les positions
+    if ('showPolymorphicOnly' in newParams || 'entropyThreshold' in newParams) {
+      positions.value = filteredPositions.value;
+    }
   }
 
   async function calculatePositions() {
@@ -63,8 +97,11 @@ export function useHlaAnalysis() {
         bCsvData.value
       );
 
-      // Update positions
-      positions.value = result.positionWeighted;
+      // Stocker toutes les positions non filtrées
+      rawPositions.value = result.positionWeighted;
+      
+      // Appliquer le filtre d'entropie
+      positions.value = filteredPositions.value;
       
       // Store the new detailed data
       filteredContactData.value = result.filteredData;
@@ -89,6 +126,7 @@ export function useHlaAnalysis() {
       console.error('Error calculating positions:', err);
       
       // Reset all values
+      rawPositions.value = {};
       positions.value = {};
       filteredContactData.value = null;
       alleleSpecificPositionsResult.value = null;
@@ -111,6 +149,8 @@ export function useHlaAnalysis() {
     classicalDivergence,
     specificDivergence,
     filteredContactData,    
-    totalStructure
+    totalStructure,
+    entropyData,
+    rawPositions
   };
 }

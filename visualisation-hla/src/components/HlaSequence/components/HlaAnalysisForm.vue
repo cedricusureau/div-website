@@ -84,60 +84,91 @@
       </div>
     </div>
 
+    <!-- Options de filtrage -->
+    <div class="filter-options">
+      <div class="polymorphic-filter">
+        <div class="checkbox-wrapper">
+          <input
+            type="checkbox"
+            id="showPolymorphicOnly"
+            :checked="formParams.showPolymorphicOnly"
+            @change="updateParam('showPolymorphicOnly', $event.target.checked)"
+            class="filter-checkbox"
+          >
+          <label for="showPolymorphicOnly">
+            Do not show non-polymorphic positions
+          </label>
+        </div>
+        
+        <div class="threshold-input" v-if="formParams.showPolymorphicOnly">
+          <label for="entropyThreshold" class="threshold-label">Entropy threshold:</label>
+          <input
+            type="number"
+            id="entropyThreshold"
+            :value="formParams.entropyThreshold"
+            @input="updateParam('entropyThreshold', Number($event.target.value))"
+            min="0"
+            max="3"
+            step="0.1"
+            class="threshold-control"
+          >
+        </div>
+      </div>
+    </div>
+
     <!-- Section des allèles optionnels en une ligne -->
-    <!-- Section des allèles avec auto-complétion -->
     <div class="optional-alleles">
       <div class="alleles-row">
         <label class="optional-label">Compare HLA sequences (optional):</label>
         <div class="alleles-inputs">
-  <div class="autocomplete-container">
-    <input
-      type="text"
-      :value="formParams.allele1"
-      @input="handleAlleleInput(1, $event.target.value)"
-      @focus="showSuggestions = 1"
-      @blur="handleBlur"
-      class="form-control allele-input"
-      :class="{ 'invalid-allele': invalidAlleles.allele1 }"
-      placeholder="First allele (e.g., A*02:01)"
-    >
-    <div v-if="showSuggestions === 1 && filteredAlleles.length > 0" class="suggestions-list">
-      <div
-        v-for="allele in filteredAlleles"
-        :key="allele"
-        @mousedown.prevent="selectAllele(1, allele)"
-        class="suggestion-item"
-        :class="{ 'selected': allele === formParams.allele1 }"
-      >
-        {{ allele }}
-      </div>
-    </div>
-  </div>
+          <div class="autocomplete-container">
+            <input
+              type="text"
+              :value="formParams.allele1"
+              @input="handleAlleleInput(1, $event.target.value)"
+              @focus="showSuggestions = 1"
+              @blur="handleBlur"
+              class="form-control allele-input"
+              :class="{ 'invalid-allele': invalidAlleles.allele1 }"
+              placeholder="First allele (e.g., A*02:01)"
+            >
+            <div v-if="showSuggestions === 1 && filteredAlleles.length > 0" class="suggestions-list">
+              <div
+                v-for="allele in filteredAlleles"
+                :key="allele"
+                @mousedown.prevent="selectAllele(1, allele)"
+                class="suggestion-item"
+                :class="{ 'selected': allele === formParams.allele1 }"
+              >
+                {{ allele }}
+              </div>
+            </div>
+          </div>
 
-  <div class="autocomplete-container">
-    <input
-      type="text"
-      :value="formParams.allele2"
-      @input="handleAlleleInput(2, $event.target.value)"
-      @focus="showSuggestions = 2"
-      @blur="handleBlur"
-      class="form-control allele-input"
-      :class="{ 'invalid-allele': invalidAlleles.allele2 }"
-      placeholder="Second allele (e.g., A*02:06)"
-    >
-    <div v-if="showSuggestions === 2 && filteredAlleles.length > 0" class="suggestions-list">
-      <div
-        v-for="allele in filteredAlleles"
-        :key="allele"
-        @mousedown.prevent="selectAllele(2, allele)"
-        class="suggestion-item"
-        :class="{ 'selected': allele === formParams.allele2 }"
-      >
-        {{ allele }}
-      </div>
-    </div>
-  </div>
-</div>
+          <div class="autocomplete-container">
+            <input
+              type="text"
+              :value="formParams.allele2"
+              @input="handleAlleleInput(2, $event.target.value)"
+              @focus="showSuggestions = 2"
+              @blur="handleBlur"
+              class="form-control allele-input"
+              :class="{ 'invalid-allele': invalidAlleles.allele2 }"
+              placeholder="Second allele (e.g., A*02:06)"
+            >
+            <div v-if="showSuggestions === 2 && filteredAlleles.length > 0" class="suggestions-list">
+              <div
+                v-for="allele in filteredAlleles"
+                :key="allele"
+                @mousedown.prevent="selectAllele(2, allele)"
+                class="suggestion-item"
+                :class="{ 'selected': allele === formParams.allele2 }"
+              >
+                {{ allele }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -149,13 +180,6 @@
         :disabled="loading"
       >
         Batch Analysis
-      </button>
-      <button
-        @click="$emit('analyze')"
-        class="submit-button"
-        :disabled="loading"
-      >
-        Explore HLA-TCR interactions
       </button>
     </div>
   </div>
@@ -174,7 +198,9 @@ export default {
         percentage: 20,
         interactionType: 'Peptide',
         allele1: '',
-        allele2: ''
+        allele2: '',
+        showPolymorphicOnly: true,
+        entropyThreshold: 0.2
       })
     },
     loading: {
@@ -265,14 +291,14 @@ export default {
       }, 200);
     },
     openBatchAnalysis() {
-    const currentParams = {
-      locus: this.formParams.locus,
-      distance: this.formParams.distance,
-      percentage: this.formParams.percentage,
-      interactionType: this.formParams.interactionType
-    };
-    this.$emit('open-batch-analysis', currentParams);
-  },
+      const currentParams = {
+        locus: this.formParams.locus,
+        distance: this.formParams.distance,
+        percentage: this.formParams.percentage,
+        interactionType: this.formParams.interactionType
+      };
+      this.$emit('open-batch-analysis', currentParams);
+    }
   },
   computed: {
     filteredAlleles() {
@@ -324,6 +350,51 @@ export default {
   font-size: 0.9rem;
 }
 
+.filter-options {
+  margin: 1rem 0;
+  padding: 0.5rem 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.polymorphic-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.threshold-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.threshold-label {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.threshold-control {
+  width: 60px;
+  padding: 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
 .optional-alleles {
   margin-bottom: 1.5rem;
 }
@@ -337,7 +408,7 @@ export default {
 .optional-label {
   white-space: nowrap;
   font-weight: 500;
-  font-size: 0.9rem; /* Ajouté */
+  font-size: 0.9rem;
 }
 
 .alleles-inputs {
@@ -377,7 +448,7 @@ export default {
 
 label {
   font-weight: 500;
-  font-size: 0.9rem; /* Ajouté */
+  font-size: 0.9rem;
 }
 
 .autocomplete-container {
@@ -400,8 +471,8 @@ label {
 }
 
 .suggestion-item {
-  padding: 6px 10px;  /* Réduit de 8px 12px */
-  font-size: 0.85rem; /* Réduit de 0.9rem */
+  padding: 6px 10px;
+  font-size: 0.85rem;
 }
 
 .suggestion-item:hover,
@@ -425,7 +496,18 @@ label {
   .optional-label {
     margin-bottom: 0.5rem;
   }
+  
+  .polymorphic-filter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .threshold-input {
+    margin-left: 1.5rem;
+    margin-top: 0.5rem;
+  }
 }
+
 .invalid-allele {
   border-color: #dc3545;
   box-shadow: 0 0 0 2px #dc3545;
@@ -461,5 +543,4 @@ label {
   background-color: #ccc;
   cursor: not-allowed;
 }
-
 </style>
