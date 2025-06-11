@@ -84,6 +84,8 @@
       </div>
     </div>
 
+
+
     <!-- Options de filtrage -->
     <div class="filter-options">
       <div class="polymorphic-filter">
@@ -172,14 +174,26 @@
       </div>
     </div>
 
-    <!-- Bouton analyse -->
-    <div class="button-wrapper">
+    <!-- Bouton Batch Analysis flottant -->
+    <div class="batch-analysis-floating">
+      <!-- Affichage des positions sélectionnées -->
+      <div v-if="selectedPositions && selectedPositions.length > 0" class="selected-positions-display">
+        <span class="positions-label">Selected positions:</span>
+        <span class="positions-list">{{ selectedPositions.join(', ') }}</span>
+      </div>
+      
       <button
         @click="openBatchAnalysis"
-        class="batch-button"
+        class="batch-floating-button"
         :disabled="loading"
+        title="Run batch analysis with current parameters"
       >
-        Batch Analysis
+        <svg class="batch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <path d="M8 12h8"/>
+          <path d="M12 8v8"/>
+        </svg>
+        <span class="batch-text">Batch Analysis</span>
       </button>
     </div>
   </div>
@@ -206,6 +220,10 @@ export default {
     loading: {
       type: Boolean,
       default: false
+    },
+    selectedPositions: {
+      type: Array,
+      default: () => []
     }
   },
   data() {
@@ -350,6 +368,76 @@ export default {
   font-size: 0.9rem;
 }
 
+/* Auto-update indicator */
+.auto-update-indicator {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.indicator-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #495057;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.auto-icon {
+  width: 16px;
+  height: 16px;
+  animation: gentle-spin 3s linear infinite;
+}
+
+@keyframes gentle-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.indicator-text {
+  color: #6c757d;
+}
+
+/* Auto-update indicator */
+.auto-update-indicator {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.indicator-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #495057;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.auto-icon {
+  width: 16px;
+  height: 16px;
+  animation: gentle-spin 3s linear infinite;
+}
+
+@keyframes gentle-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.indicator-text {
+  color: #6c757d;
+}
+
 .filter-options {
   margin: 1rem 0;
   padding: 0.5rem 0;
@@ -421,29 +509,78 @@ export default {
   flex: 1;
 }
 
-.button-wrapper {
-  display: flex;
-  justify-content: center;
+/* Section Batch Analysis redessinée */
+.batch-analysis-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  border: 1px solid #d6d9e7;
+  border-radius: 8px;
+  position: relative;
 }
 
-.submit-button {
-  padding: 0.75rem 2rem;
-  background-color: #007bff;
+.section-header {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.section-header h4 {
+  margin: 0 0 0.5rem 0;
+  color: #4c63d2;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.section-description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.batch-analysis-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 }
 
-.submit-button:hover:not(:disabled) {
-  background-color: #0056b3;
+.batch-analysis-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
 }
 
-.submit-button:disabled {
-  background-color: #ccc;
+.batch-analysis-button:disabled {
+  background: #94a3b8;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.batch-icon,
+.arrow-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.arrow-icon {
+  transition: transform 0.2s ease;
+}
+
+.batch-analysis-button:hover:not(:disabled) .arrow-icon {
+  transform: translateX(2px);
 }
 
 label {
@@ -480,14 +617,13 @@ label {
   background-color: #f0f0f0;
 }
 
-.alleles-inputs {
-  display: flex;
-  gap: 1rem;
-  flex: 1;
-}
-
 /* Ajustements pour le responsive */
 @media (max-width: 768px) {
+  .main-form {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
   .alleles-row {
     flex-direction: column;
     align-items: stretch;
@@ -506,6 +642,21 @@ label {
     margin-left: 1.5rem;
     margin-top: 0.5rem;
   }
+  
+  .batch-floating-button {
+    position: relative;
+    top: 0;
+    right: 0;
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .selected-positions-display {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
 }
 
 .invalid-allele {
@@ -516,31 +667,5 @@ label {
 .invalid-allele:focus {
   border-color: #dc3545;
   box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
-
-.button-wrapper {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.batch-button {
-  padding: 0.75rem 2rem;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.batch-button:hover:not(:disabled) {
-  background-color: #218838;
-}
-
-.batch-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
 }
 </style>

@@ -8,6 +8,7 @@
       <HlaAnalysisForm
         :formParams="formParams"
         :loading="loading"
+        :selectedPositions="selectedPositions"
         @update:formParams="wrappedUpdateParams"
         @open-batch-analysis="handleBatchAnalysis"
       />  
