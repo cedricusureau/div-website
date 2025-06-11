@@ -8,19 +8,22 @@
       <HlaAnalysisForm
         :formParams="formParams"
         :loading="loading"
+        :filteredPositions="Object.keys(positions)"
         :selectedPositions="selectedPositions"
         @update:formParams="wrappedUpdateParams"
         @open-batch-analysis="handleBatchAnalysis"
-      />  
-      <SequenceVisualization
-        :positions="positions"
-        :total-positions="Object.keys(positions).length"
-        :allele-specific-positions-result="alleleSpecificPositionsResult"
-        :classical-divergence="classicalDivergence"
-        :specific-divergence="specificDivergence"
-        :filtered-contact-data="filteredContactDataByPositions" 
-        @positions-selected="handlePositionSelection"
+        @position-clicked="handlePositionClickFromForm"
       />
+    <SequenceVisualization
+      :positions="positions"
+      :total-positions="Object.keys(positions).length"  
+      :allele-specific-positions-result="alleleSpecificPositionsResult"
+      :classical-divergence="classicalDivergence"
+      :specific-divergence="specificDivergence"
+      :filtered-contact-data="filteredContactDataByPositions"
+      :selectedPositions="selectedPositions"
+      @positions-selected="handlePositionSelection"
+    />
     </div>
   </div>
 </template>
@@ -121,9 +124,26 @@ export default {
       emit('switch-to-batch', batchData);
     };
 
-    // Gestionnaire pour la sélection de positions
+    // Gestionnaire pour la sélection de positions depuis la frise
     const handlePositionSelection = (positions) => {
       selectedPositions.value = positions;
+    };
+
+    // AJOUT : Gestionnaire pour la sélection de positions depuis le formulaire
+    const handlePositionClickFromForm = (position) => {
+      // Utiliser la même logique que dans SequenceVisualization
+      const positionStr = String(position);
+      const index = selectedPositions.value.indexOf(positionStr);
+      
+      if (index !== -1) {
+        // Position déjà sélectionnée, la retirer
+        const newSelection = [...selectedPositions.value];
+        newSelection.splice(index, 1);
+        selectedPositions.value = newSelection;
+      } else {
+        // Position non sélectionnée, l'ajouter
+        selectedPositions.value = [...selectedPositions.value, positionStr];
+      }
     };
 
     onMounted(() => {
@@ -151,6 +171,7 @@ export default {
       specificDivergence,
       filteredContactDataByPositions,
       handlePositionSelection,
+      handlePositionClickFromForm, // AJOUT : Nouvelle méthode
       totalStructure,
       selectedPositions,
       handleBatchAnalysis,

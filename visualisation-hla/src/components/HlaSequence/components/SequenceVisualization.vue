@@ -227,63 +227,66 @@ export default {
       type: Array,
       default: () => []
     },
-    totalStructure: {  // Ajout de cette prop si elle n'existe pas déjà
+    totalStructure: {
       type: Number,
       default: 0
     },
+    selectedPositions: {
+      type: Array,
+      default: () => []
+    }
   },
   data() {
-  return {
-    hoveredPosition: null,
-    hoveredMismatch: null,
-    selectedPositions: [], // Changé de selectedPosition à selectedPositions
-    showPeptideInteractions: false,
-    colorMap: {
-      'Peptide': '#FF6B6B',     // Rouge doux
-      'TCR': '#4ECDC4',         // Turquoise
-      'Peptide + TCR': '#A78ADB' // Violet doux
+    return {
+      hoveredPosition: null,
+      hoveredMismatch: null,
+      showPeptideInteractions: false,
+      colorMap: {
+        'Peptide': '#FF6B6B',
+        'TCR': '#4ECDC4',
+        'Peptide + TCR': '#A78ADB'
+      }
     }
-  }
-},
-computed: {
-  selectedPositionsList() {
-    return Object.keys(this.positions);
   },
-  // Ajoutez cette computed property pour les positions sélectionnées
-  selectedPositionsForSankey() {
-
-    console.log("filteredContactData length:", this.filteredContactData.length);
-    // Si aucune position n'est sélectionnée, utilisez toutes les positions
-    return this.selectedPositions.length > 0 
-      ? this.selectedPositions 
-      : Object.keys(this.positions);
-  }
-},
+  computed: {
+    selectedPositionsList() {
+      return Object.keys(this.positions);
+    },
+    selectedPositionsForSankey() {
+      console.log("filteredContactData length:", this.filteredContactData.length);
+      // MODIFICATION : Utiliser this.selectedPositions (prop) au lieu de this.selectedPositions (data)
+      return this.selectedPositions.length > 0 
+        ? this.selectedPositions 
+        : Object.keys(this.positions);
+    }
+  },
   methods: {
     handleClick(position) {
-  // Convertir la position en chaîne de caractères pour assurer la cohérence
-  const positionStr = String(position);
-  
-  // Vérifier si la position est déjà sélectionnée
-  const index = this.selectedPositions.indexOf(positionStr);
-  
-  if (index !== -1) {
-    // Si oui, la retirer du tableau
-    const newSelection = [...this.selectedPositions];
-    newSelection.splice(index, 1);
-    this.selectedPositions = newSelection;
-  } else {
-    // Sinon, l'ajouter au tableau
-    this.selectedPositions = [...this.selectedPositions, positionStr];
-  }
-  
-  // Émettre l'événement avec le tableau de positions sélectionnées
-  this.$emit('positions-selected', this.selectedPositions);
-},
+      console.log('🎭 Sequence position clicked:', position);
+      
+      // MODIFICATION : Utiliser this.selectedPositions (prop) au lieu de this.selectedPositions (data)
+      const positionStr = String(position);
+      const index = this.selectedPositions.indexOf(positionStr);
+      
+      let newSelection;
+      if (index !== -1) {
+        // Position déjà sélectionnée, la retirer
+        newSelection = [...this.selectedPositions];
+        newSelection.splice(index, 1);
+      } else {
+        // Position non sélectionnée, l'ajouter
+        newSelection = [...this.selectedPositions, positionStr];
+      }
+      
+      console.log('🎭 Emitting positions-selected:', newSelection);
+      // MODIFICATION : Émettre le nouveau tableau au lieu de le stocker localement
+      this.$emit('positions-selected', newSelection);
+    },
+    
+    // ... toutes vos autres méthodes restent identiques ...
     togglePeptideInteractions() {
       this.showPeptideInteractions = !this.showPeptideInteractions;
       
-      // Si l'accordéon s'ouvre, planifier un défilement vers cette section
       if (this.showPeptideInteractions) {
         this.$nextTick(() => {
           this.scrollToAccordion();
@@ -291,16 +294,13 @@ computed: {
       }
     },
     scrollToAccordion() {
-      // Attendre un court délai pour permettre à l'animation de transition de commencer
       setTimeout(() => {
         if (this.$refs.accordionSection) {
-          // Calculer la position de défilement
           const element = this.$refs.accordionSection;
           const elementRect = element.getBoundingClientRect();
           const absoluteElementTop = elementRect.top + window.pageYOffset;
           const middle = absoluteElementTop - (window.innerHeight / 4);
           
-          // Défiler en douceur vers l'accordéon
           window.scrollTo({
             top: middle,
             behavior: 'smooth'
@@ -322,21 +322,17 @@ computed: {
       return 50 + (positionNum * 700/180);
     },
     getArrowLength(score) {
-      // Le score Grantham va de 0 à 215 (max théorique)
-      // On veut des flèches entre 15 et 75 pixels de long
       const minLength = 15;
       const maxLength = 75;
       const maxScore = 215;
-     
       return minLength + (score / maxScore) * (maxLength - minLength);
     },
     getArrowHitPath(position, granthamScore) {
       const x = this.getXPosition(position);
       const length = this.getArrowLength(granthamScore);
-      const y1 = 75;  // Position basse de la flèche
-      const y2 = 80 - length;  // Position haute de la flèche
-     
-      // Créer un path qui entoure la flèche avec une marge de 5px
+      const y1 = 75;
+      const y2 = 80 - length;
+      
       return `
         M ${x - 3} ${y1}
         L ${x - 3} ${y2}

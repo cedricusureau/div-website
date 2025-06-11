@@ -176,11 +176,22 @@
 
     <!-- Bouton Batch Analysis flottant -->
     <div class="batch-analysis-floating">
-      <!-- Affichage des positions sélectionnées -->
-      <div v-if="selectedPositions && selectedPositions.length > 0" class="selected-positions-display">
-        <span class="positions-label">Selected positions:</span>
-        <span class="positions-list">{{ selectedPositions.join(', ') }}</span>
-      </div>
+      <!-- Affichage des positions filtré -->
+<div v-if="filteredPositions && filteredPositions.length > 0" class="selected-positions-display">
+  <span class="positions-label">Filtered positions ({{ filteredPositions.length }}):</span>
+  <div class="positions-list">
+    <span 
+      v-for="(position, index) in filteredPositions" 
+      :key="position"
+      class="position-chip"
+      :class="{ 'selected': selectedPositions.includes(position) }"
+      @click="togglePosition(position)"
+      :title="`Click to ${selectedPositions.includes(position) ? 'deselect' : 'select'} position ${position}`"
+    >
+      {{ position }}<span v-if="index < filteredPositions.length - 1"></span>
+    </span>
+  </div>
+</div>
       
       <button
         @click="openBatchAnalysis"
@@ -221,7 +232,11 @@ export default {
       type: Boolean,
       default: false
     },
-    selectedPositions: {
+    filteredPositions: {
+      type: Array,
+      default: () => []
+    },
+    selectedPositions: {  
       type: Array,
       default: () => []
     }
@@ -278,6 +293,10 @@ export default {
         return;
       }
       this.invalidAlleles[alleleField] = !this.allelesList.includes(value);
+    },
+        togglePosition(position) {
+      // Émettre l'événement vers le parent pour qu'il gère la sélection
+      this.$emit('position-clicked', position);
     },
     updateParam(key, value) {
       if (key === 'locus') {
@@ -366,41 +385,6 @@ export default {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.9rem;
-}
-
-/* Auto-update indicator */
-.auto-update-indicator {
-  margin: 1rem 0;
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  text-align: center;
-}
-
-.indicator-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  color: #495057;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.auto-icon {
-  width: 16px;
-  height: 16px;
-  animation: gentle-spin 3s linear infinite;
-}
-
-@keyframes gentle-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.indicator-text {
-  color: #6c757d;
 }
 
 /* Auto-update indicator */
@@ -667,5 +651,139 @@ label {
 .invalid-allele:focus {
   border-color: #dc3545;
   box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+/* Bouton Batch Analysis flottant */
+.batch-analysis-floating {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.selected-positions-display {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: #495057;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.positions-label {
+  font-weight: 600;
+  color: #6c757d;
+  margin-right: 0.5rem;
+}
+
+.positions-list {
+  font-weight: 500;
+  color: #495057;
+  font-family: 'Courier New', monospace;
+}
+
+.batch-floating-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.batch-floating-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+}
+
+.batch-floating-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.2);
+}
+
+.batch-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.batch-text {
+  white-space: nowrap;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Mise à jour des styles responsive */
+@media (max-width: 768px) {
+  .batch-analysis-floating {
+    align-items: center;
+  }
+  
+  .batch-floating-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .selected-positions-display {
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.positions-list {
+  font-weight: 500;
+  color: #495057;
+  font-family: 'Courier New', monospace;
+  line-height: 1.4;
+}
+
+.position-chip {
+  display: inline-block;
+  padding: 2px 6px;
+  margin: 1px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.position-chip:hover {
+  background-color: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.position-chip.selected {
+  background-color: #6366f1;
+  color: white;
+  border-color: #6366f1;
+  font-weight: 600;
+}
+
+.position-chip.selected:hover {
+  background-color: #5856eb;
+  border-color: #5856eb;
 }
 </style>
