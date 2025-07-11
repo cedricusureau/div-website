@@ -172,7 +172,7 @@
           <span class="divergence-value">{{ classicalDivergence !== null ? classicalDivergence.toFixed(2) : 'N/A' }}</span>
         </div>
         <div class="divergence-item">
-          <span class="divergence-label">Specific Divergence:</span>
+          <span class="divergence-label">Targeted Divergence:</span>
           <span class="divergence-value">{{ specificDivergence !== null ? specificDivergence.toFixed(2) : 'N/A' }}</span>
         </div>
       </div>
