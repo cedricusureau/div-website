@@ -1,31 +1,50 @@
 <template>
-  <div class="sequence-container">
+  <v-container fluid class="sequence-container">
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
       <p>Loading...</p>
     </div>
     <div v-if="!loading && !error" class="analysis-container">
-      <HlaAnalysisForm
-        :formParams="formParams"
-        :loading="loading"
-        :filteredPositions="Object.keys(positions)"
-        :selectedPositions="selectedPositions"
-        @update:formParams="wrappedUpdateParams"
-        @open-batch-analysis="handleBatchAnalysis"
-        @position-clicked="handlePositionClickFromForm"
-      />
-    <SequenceVisualization
-      :positions="positions"
-      :total-positions="Object.keys(positions).length"  
-      :allele-specific-positions-result="alleleSpecificPositionsResult"
-      :classical-divergence="classicalDivergence"
-      :specific-divergence="specificDivergence"
-      :filtered-contact-data="filteredContactDataByPositions"
-      :selectedPositions="selectedPositions"
-      @positions-selected="handlePositionSelection"
-    />
+      <v-row no-gutters>
+        <!-- Colonne formulaire (gauche sur grands écrans) -->
+        <v-col 
+          cols="12" 
+          lg="4" 
+          xl="3" 
+          class="form-column"
+        >
+          <HlaAnalysisForm
+            :formParams="formParams"
+            :loading="loading"
+            :filteredPositions="Object.keys(positions)"
+            :selectedPositions="selectedPositions"
+            @update:formParams="wrappedUpdateParams"
+            @open-batch-analysis="handleBatchAnalysis"
+            @position-clicked="handlePositionClickFromForm"
+          />
+        </v-col>
+        
+        <!-- Colonne visualisation (droite sur grands écrans) -->
+        <v-col 
+          cols="12" 
+          lg="8" 
+          xl="9"
+          class="visualization-column"
+        >
+          <SequenceVisualization
+            :positions="positions"
+            :total-positions="Object.keys(positions).length"  
+            :allele-specific-positions-result="alleleSpecificPositionsResult"
+            :classical-divergence="classicalDivergence"
+            :specific-divergence="specificDivergence"
+            :filtered-contact-data="filteredContactDataByPositions"
+            :selectedPositions="selectedPositions"
+            @positions-selected="handlePositionSelection"
+          />
+        </v-col>
+      </v-row>
     </div>
-  </div>
+  </v-container>
 </template>
 
 <script>
@@ -183,25 +202,23 @@ export default {
 
 <style scoped>
 .sequence-container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
+  max-width: 100%;
+  padding: 0;
   position: relative;
 }
 
 .loading-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 10;
+  z-index: 9999;
 }
 
 .spinner {
@@ -220,8 +237,40 @@ export default {
 }
 
 .analysis-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  height: 100%;
+}
+
+.form-column {
+  padding: 1rem;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.visualization-column {
+  padding: 1rem;
+  min-height: calc(100vh - 120px);
+}
+
+/* Mobile adjustments */
+@media (max-width: 1023px) {
+  .form-column {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    padding: 0.5rem;
+  }
+  
+  .visualization-column {
+    padding: 0.5rem;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .visualization-column {
+    padding: 0.25rem;
+  }
 }
 </style>

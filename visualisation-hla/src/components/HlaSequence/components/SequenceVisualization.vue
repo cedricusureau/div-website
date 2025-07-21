@@ -1,5 +1,7 @@
 <template>
   <div class="visualization">
+    <!-- Frise de visualisation de séquence et divergence -->
+    <div class="visualization-section">
     <div class="legend-container">
       <div class="legend">
         <div v-for="(color, type) in colorMap" :key="type" class="legend-item">
@@ -16,7 +18,7 @@
     </div>
    
     <svg class="sequence-svg"
-      viewBox="0 0 800 150"
+      viewBox="0 0 800 120"
       preserveAspectRatio="xMidYMid meet"
     >
       <!-- Ligne principale -->
@@ -41,7 +43,7 @@
         />
         <text
           :x="50 + (i * 20 * 700/180)"
-          y="100"
+          y="98"
           text-anchor="middle"
           font-size="10"
           fill="#666666"
@@ -67,7 +69,7 @@
         <text
           v-if="hoveredPosition === position"
           :x="50 + (position * 700/180)"
-          y="100"
+          y="115"
           text-anchor="middle"
           font-size="10"
           fill="#333"
@@ -165,7 +167,17 @@
       </defs>
     </svg>
 
-    <div class="divergence-info" v-if="classicalDivergence !== null || specificDivergence !== null">
+    <!-- Ligne de comparaison des allèles sous la frise -->
+    <div class="allele-comparison-line" v-if="alleleSpecificPositionsResult?.mismatches?.length">
+      {{ alleleSpecificPositionsResult.mismatches[0]?.allele1?.allele || 'N/A' }} vs {{ alleleSpecificPositionsResult.mismatches[0]?.allele2?.allele || 'N/A' }} • 
+      {{ alleleSpecificPositionsResult.totalMismatches || 0 }} mismatches
+      <span v-if="getFilteredMismatchCount() > 0" class="filtered-mismatches">
+        ({{ getFilteredMismatchCount() }} in filtered positions)
+      </span>
+    </div>
+    
+    <!-- Divergence Analysis dans la même section -->
+    <div v-if="classicalDivergence !== null || specificDivergence !== null" class="divergence-info">
       <div class="divergence-container">
         <div class="divergence-item">
           <span class="divergence-label">Classical Divergence (HED):</span>
@@ -177,21 +189,22 @@
         </div>
       </div>
     </div>
+    </div>
     
-    <!-- Section de l'accordéon pour les interactions peptidiques -->
-    <div class="peptide-interactions-section" v-if="Object.keys(positions).length > 0" ref="accordionSection">
-      <div class="accordion-header" @click="togglePeptideInteractions">
-        <span class="accordion-title">Interactions Details</span>
-        <span class="accordion-icon">{{ showPeptideInteractions ? '▲' : '▼' }}</span>
+    <!-- Interactions Details (Sankey Diagram) -->
+    <div class="interactions-section" v-if="positions && Object.keys(positions).length > 0" ref="accordionSection">
+      <div class="interactions-header clickable-header" @click="togglePeptideInteractions">
+        <span class="interactions-title">Interactions Details (Sankey Diagram)</span>
+        <span class="interactions-icon">{{ showPeptideInteractions ? '▲' : '▼' }}</span>
       </div>
       
       <transition name="slide">
-        <div v-if="showPeptideInteractions" class="accordion-content">
+        <div v-if="showPeptideInteractions" class="interactions-content">
           <PeptideInteractionsSankey 
-  :filteredContactData="filteredContactData"
-  :selectedPositions="selectedPositionsForSankey"
-  :totalStructures="totalStructure"
-/>
+            :filteredContactData="filteredContactData"
+            :selectedPositions="selectedPositionsForSankey"
+            :totalStructures="totalStructure"
+          />
         </div>
       </transition>
     </div>
@@ -250,14 +263,28 @@ export default {
   },
   computed: {
     selectedPositionsList() {
-      return Object.keys(this.positions);
+      return this.positions ? Object.keys(this.positions) : [];
     },
     selectedPositionsForSankey() {
       console.log("filteredContactData length:", this.filteredContactData.length);
       // MODIFICATION : Utiliser this.selectedPositions (prop) au lieu de this.selectedPositions (data)
       return this.selectedPositions.length > 0 
         ? this.selectedPositions 
-        : Object.keys(this.positions);
+        : (this.positions ? Object.keys(this.positions) : []);
+    }
+  },
+  watch: {
+    selectedPositions: {
+      handler(newSelectedPositions) {
+        // Ouvrir automatiquement l'accordéon si des positions sont sélectionnées
+        if (newSelectedPositions && newSelectedPositions.length > 0 && !this.showPeptideInteractions) {
+          this.showPeptideInteractions = true;
+          this.$nextTick(() => {
+            this.scrollToAccordion();
+          });
+        }
+      },
+      immediate: false
     }
   },
   methods: {
@@ -311,6 +338,15 @@ export default {
     getColorForType(type) {
       return this.colorMap[type] || '#999999';
     },
+    getFilteredMismatchCount() {
+      if (!this.alleleSpecificPositionsResult?.mismatches || !this.positions) {
+        return 0;
+      }
+      // Compter les mismatches qui sont dans les positions filtrées (celles affichées dans la frise)
+      return this.alleleSpecificPositionsResult.mismatches.filter(mismatch => 
+        Object.keys(this.positions).includes(String(mismatch.position))
+      ).length;
+    },
     showTooltip(position) {
       this.hoveredPosition = position;
     },
@@ -355,13 +391,11 @@ export default {
 
 <style scoped>
 .visualization {
-  background-color: #ffffff;
-  border-radius: 8px;
-  padding: 20px;
-  margin-top: 20px;
+  /* background removed for harmonized wrappers */
+  padding: 8px;
   position: relative;
   width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* box-shadow removed */
 }
 
 .legend-container {
@@ -433,9 +467,9 @@ svg {
 }
 
 .divergence-info {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 .divergence-container {
@@ -463,43 +497,87 @@ svg {
   font-weight: 600;
 }
 
-/* Style pour l'accordéon */
-.peptide-interactions-section {
-  margin-top: 30px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  overflow: hidden;
+/* Style pour la ligne de comparaison des allèles */
+.allele-comparison-line {
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  margin: 6px 0 0 0;
+  padding: 0;
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
 }
 
-.accordion-header {
+.filtered-mismatches {
+  color: #D85A5A;
+  font-size: 13px;
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+/* Styles pour les wrappers harmonisés */
+.visualization-section,
+.interactions-section {
+  background: rgba(248, 249, 250, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(224, 224, 224, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.interactions-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background-color: #f8f9fa;
+  padding: 8px 0;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.2s;
+  border-bottom: 1px solid rgba(224, 224, 224, 0.3);
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
 }
 
-.accordion-header:hover {
-  background-color: #e9ecef;
+.clickable-header:hover {
+  background: rgba(74, 144, 226, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0 -12px 12px -12px;
 }
 
-.accordion-title {
+.clickable-header:hover .interactions-title {
+  color: #4a90e2;
+}
+
+.clickable-header:hover .interactions-icon {
+  color: #2d5aa0;
+  transform: scale(1.1);
+}
+
+.interactions-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.interactions-title::before {
+  content: "📊";
   font-size: 16px;
-  font-weight: 500;
-  color: #4a90e2;
 }
 
-.accordion-icon {
-  font-size: 14px;
+.interactions-icon {
+  font-size: 16px;
   color: #4a90e2;
+  font-weight: bold;
+  transition: transform 0.2s ease;
 }
 
-.accordion-content {
-  padding: 0;
-  overflow: hidden;
+.interactions-content {
+  padding-top: 8px;
 }
 
 /* Animation de transition pour l'accordéon */
@@ -512,5 +590,19 @@ svg {
 .slide-enter-from, .slide-leave-to {
   max-height: 0;
   overflow: hidden;
+}
+
+/* Style responsive pour la ligne de comparaison */
+@media (max-width: 480px) {
+  .allele-comparison-line {
+    font-size: 11px;
+  }
+  
+  .filtered-mismatches {
+    font-size: 10px;
+    display: block;
+    margin-top: 2px;
+    margin-left: 0;
+  }
 }
 </style>

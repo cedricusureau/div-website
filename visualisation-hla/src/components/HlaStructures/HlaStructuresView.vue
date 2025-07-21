@@ -47,38 +47,54 @@ const pdbStats = computed(() => {
   }));
 });
 
-// Ajoutez une fonction pour créer les camemberts
-const createPieChart = (data, containerId) => {
+// Fonction améliorée pour créer les camemberts
+const createPieChart = (data, containerId, title = '') => {
   // Clear previous chart
   d3.select(`#${containerId}`).selectAll('*').remove();
 
-  const width = 300;
-  const height = 300;
-  const radius = Math.min(width, height) / 2 * 0.8;
+  const width = 320;
+  const height = 340; // Un peu plus haut pour le titre
+  const radius = Math.min(width, height - 40) / 2 * 0.8;
 
+  // Couleurs plus distinctes et professionnelles
   const color = d3.scaleOrdinal()
     .domain(data.map(d => d.name))
-    .range(['#6366f1', '#10b981', '#f59e0b', '#ef4444']);
+    .range(['#2563eb', '#059669', '#dc2626', '#7c3aed', '#ea580c', '#0891b2']);
 
-  // Créer un div pour le tooltip
+  // Créer un div pour le tooltip amélioré
   const tooltip = d3.select("body")
     .append("div")
     .attr("class", "d3-tooltip")
     .style("position", "absolute")
     .style("visibility", "hidden")
-    .style("background-color", "white")
-    .style("border", "solid 1px #ccc")
-    .style("border-radius", "5px")
-    .style("padding", "10px")
-    .style("font-size", "12px")
-    .style("box-shadow", "0 0 10px rgba(0,0,0,0.1)")
-    .style("pointer-events", "none");
+    .style("background-color", "rgba(0, 0, 0, 0.9)")
+    .style("color", "white")
+    .style("border-radius", "8px")
+    .style("padding", "12px")
+    .style("font-size", "13px")
+    .style("font-weight", "500")
+    .style("box-shadow", "0 4px 12px rgba(0,0,0,0.3)")
+    .style("pointer-events", "none")
+    .style("z-index", "1000");
 
   const svg = d3.select(`#${containerId}`)
     .append('svg')
     .attr('width', width)
-    .attr('height', height)
-    .append('g')
+    .attr('height', height);
+
+  // Ajouter un titre si fourni
+  if (title) {
+    svg.append('text')
+      .attr('x', width / 2)
+      .attr('y', 20)
+      .attr('text-anchor', 'middle')
+      .style('font-size', '16px')
+      .style('font-weight', '600')
+      .style('fill', '#374151')
+      .text(title);
+  }
+
+  const g = svg.append('g')
     .attr('transform', `translate(${width / 2},${height / 2})`);
 
   const pie = d3.pie()
@@ -91,10 +107,10 @@ const createPieChart = (data, containerId) => {
 
   // Arc plus grand pour placer les labels
   const labelArc = d3.arc()
-    .innerRadius(radius * 0.6)
-    .outerRadius(radius * 0.6);
+    .innerRadius(radius * 0.7)
+    .outerRadius(radius * 0.7);
 
-  const arcs = svg.selectAll('arc')
+  const arcs = g.selectAll('arc')
     .data(pie(data))
     .enter()
     .append('g')
@@ -109,10 +125,17 @@ const createPieChart = (data, containerId) => {
     .style('cursor', 'pointer')
     .on('mouseover', function(event, d) {
       d3.select(this)
-        .style('opacity', 0.8);
+        .transition()
+        .duration(200)
+        .style('opacity', 0.8)
+        .attr('transform', 'scale(1.05)');
       tooltip
         .style("visibility", "visible")
-        .html(`${d.data.name}<br>${d.data.value} (${d.data.percentage.toFixed(1)}%)`);
+        .html(`<div style="text-align: center;">
+                 <strong>${d.data.name}</strong><br/>
+                 ${d.data.value} structures<br/>
+                 <span style="color: #fbbf24;">${d.data.percentage.toFixed(1)}%</span>
+               </div>`);
     })
     .on('mousemove', function(event) {
       tooltip
@@ -121,25 +144,69 @@ const createPieChart = (data, containerId) => {
     })
     .on('mouseout', function() {
       d3.select(this)
-        .style('opacity', 1);
+        .transition()
+        .duration(200)
+        .style('opacity', 1)
+        .attr('transform', 'scale(1)');
       tooltip
         .style("visibility", "hidden");
     });
 
-  // Ajouter les labels
+  // Ajouter les labels avec pourcentages
   arcs.append('text')
     .attr('transform', d => {
       // Ne montrer le texte que pour les sections assez grandes
-      if (d.data.percentage < 7) return 'translate(-1000,-1000)'; // Hors de vue
+      if (d.data.percentage < 8) return 'translate(-1000,-1000)'; // Hors de vue
       
       const pos = labelArc.centroid(d);
       return `translate(${pos})`;
     })
-    .attr('dy', '0.35em')
+    .attr('dy', '-0.1em')
     .style('text-anchor', 'middle')
     .style('font-size', '11px')
-    .style('fill', '#333')
+    .style('font-weight', '600')
+    .style('fill', '#fff')
     .text(d => `${d.data.name}`);
+
+  // Ajouter les pourcentages sous les labels
+  arcs.append('text')
+    .attr('transform', d => {
+      if (d.data.percentage < 8) return 'translate(-1000,-1000)';
+      
+      const pos = labelArc.centroid(d);
+      return `translate(${pos})`;
+    })
+    .attr('dy', '0.8em')
+    .style('text-anchor', 'middle')
+    .style('font-size', '10px')
+    .style('fill', '#fff')
+    .text(d => `${d.data.percentage.toFixed(1)}%`);
+
+  // Ajouter une légende
+  const legendContainer = svg.append('g')
+    .attr('class', 'legend')
+    .attr('transform', `translate(10, ${height - data.length * 25 - 10})`);
+
+  const legend = legendContainer.selectAll('.legend-item')
+    .data(data)
+    .enter()
+    .append('g')
+    .attr('class', 'legend-item')
+    .attr('transform', (d, i) => `translate(0, ${i * 20})`);
+
+  legend.append('rect')
+    .attr('width', 15)
+    .attr('height', 15)
+    .style('fill', d => color(d.name))
+    .style('stroke', 'white')
+    .style('stroke-width', 1);
+
+  legend.append('text')
+    .attr('x', 20)
+    .attr('y', 12)
+    .style('font-size', '12px')
+    .style('fill', '#374151')
+    .text(d => `${d.name}: ${d.value}`);
 
   // Cleanup function
   return () => {
@@ -272,17 +339,19 @@ watch(
       d3.selectAll('.d3-tooltip').remove();
       
       setTimeout(() => {
-        // Graphiques de distribution Locus
-        createPieChart(newVdjdbStats, 'vdjdb-pie');
-        createPieChart(newPdbStats, 'pdb-pie');
+        // Graphiques de distribution Locus avec titres
+        createPieChart(newVdjdbStats, 'vdjdb-pie', `VDJdb Locus Distribution (${vdjdbData.value.length} total)`);
+        createPieChart(newPdbStats, 'pdb-pie', `PDB Locus Distribution (${pdbData.value.length} total)`);
         
-        // Graphiques MHC par Locus
+        // Graphiques MHC par Locus avec titres
         newVdjdbMhcStats.forEach(stat => {
-          createPieChart(stat.counts, `vdjdb-mhc-${stat.locus}`);
+          const totalForLocus = stat.counts.reduce((sum, c) => sum + c.value, 0);
+          createPieChart(stat.counts, `vdjdb-mhc-${stat.locus}`, `VDJdb ${stat.locus} MHC (${totalForLocus} structures)`);
         });
         
         newPdbMhcStats.forEach(stat => {
-          createPieChart(stat.counts, `pdb-mhc-${stat.locus}`);
+          const totalForLocus = stat.counts.reduce((sum, c) => sum + c.value, 0);
+          createPieChart(stat.counts, `pdb-mhc-${stat.locus}`, `PDB ${stat.locus} MHC (${totalForLocus} structures)`);
         });
       }, 0);
     }
@@ -388,18 +457,53 @@ onMounted(() => {
   <v-container fluid>
     <v-row>
       <v-col cols="12">
+        <div class="d-flex align-center mb-2">
+          <v-icon color="primary" class="mr-2">mdi-molecule</v-icon>
+          <h1 class="text-h5 font-weight-bold mb-0">Structures Database</h1>
+        </div>
+        
+        <!-- Infobulle explicative -->
+        <v-alert 
+          type="info" 
+          variant="tonal" 
+          density="compact"
+          class="mb-3"
+        >
+          <template #prepend>
+            <v-icon>mdi-information-outline</v-icon>
+          </template>
+          <div class="d-flex align-center">
+            <span>
+              "<strong>VDJdb Structures</strong>": Structures generated with 
+              <a 
+                href="https://academic.oup.com/nar/article/51/W1/W569/7151345" 
+                target="_blank" 
+                class="text-primary text-decoration-none font-weight-medium"
+              >
+                TCRmodel2
+              </a>
+              from sequences extracted from the 
+              <a 
+                href="https://vdjdb.cdr3.net/" 
+                target="_blank" 
+                class="text-primary text-decoration-none font-weight-medium"
+              >
+                VDJdb
+              </a>
+              database
+            </span>
+          </div>
+        </v-alert>
+        
         <v-alert 
           v-if="error" 
           type="error" 
           variant="outlined"
+          class="mb-3"
         >
           {{ error }}
         </v-alert>
-      </v-col>
-    </v-row>
-
-    <v-row>
-      <v-col cols="12">
+        
         <v-tabs v-model="activeTab" color="primary">
           <v-tab value="vdjdb">
             VDJdb ({{ vdjdbData.length }})
@@ -407,15 +511,12 @@ onMounted(() => {
           <v-tab value="pdb">
             PDB ({{ pdbData.length }})
           </v-tab>
-          <v-tab value="stats">
-          Statistics
-        </v-tab>
         </v-tabs>
       </v-col>
     </v-row>
 
     <v-row>
-      <v-col cols="12" class="d-flex align-center gap-4" v-if="activeTab !== 'stats'">
+      <v-col cols="12" class="d-flex align-center gap-4">
         <v-text-field
           v-model="search"
           label="Search"
@@ -587,59 +688,6 @@ onMounted(() => {
         </v-data-table>
       </v-window-item>
 
-      <v-window-item value="stats">
-  <v-row>
-    <!-- Locus Distribution -->
-    <v-col cols="12" md="6">
-      <v-card>
-        <v-card-title>VDJdb Locus Distribution</v-card-title>
-        <v-card-text>
-          <div class="chart-container">
-            <div id="vdjdb-pie" style="width: 100%; height: 300px;"></div>
-          </div>
-        </v-card-text>
-      </v-card>
-    </v-col>
-    
-    <v-col cols="12" md="6">
-      <v-card>
-        <v-card-title>PDB Locus Distribution</v-card-title>
-        <v-card-text>
-          <div class="chart-container">
-            <div id="pdb-pie" style="width: 100%; height: 300px;"></div>
-          </div>
-        </v-card-text>
-      </v-card>
-    </v-col>
-
-    <!-- MHC Distribution par Locus -->
-    <template v-for="stat in vdjdbMhcStats" :key="stat.locus">
-      <v-col cols="12" md="6">
-        <v-card>
-          <v-card-title>VDJdb MHC Distribution - {{ stat.locus }}</v-card-title>
-          <v-card-text>
-            <div class="chart-container">
-              <div :id="`vdjdb-mhc-${stat.locus}`" style="width: 100%; height: 300px;"></div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </template>
-
-    <template v-for="stat in pdbMhcStats" :key="stat.locus">
-      <v-col cols="12" md="6">
-        <v-card>
-          <v-card-title>PDB MHC Distribution - {{ stat.locus }}</v-card-title>
-          <v-card-text>
-            <div class="chart-container">
-              <div :id="`pdb-mhc-${stat.locus}`" style="width: 100%; height: 300px;"></div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </template>
-  </v-row>
-</v-window-item>
 </v-window>
   </v-container>
 </template>

@@ -1,212 +1,325 @@
 <template>
+  <div class="form-wrapper">
   <div class="form-container">
-    <!-- Paramètres principaux en deux colonnes -->
-    <div class="main-form">
-      <!-- Première colonne : Locus et Type d'interaction -->
-      <div class="form-column">
-        <div class="form-group">
-          <div class="tooltip-container">
-            <label for="locus">
-              HLA Locus
-              <span class="tooltip">Select the specific HLA class I molecule (A or B) for interaction analysis</span>
-            </label>
-          </div>
-          <select
-            id="locus"
-            :value="formParams.locus"
-            @change="updateParam('locus', $event.target.value)"
-            class="form-control"
-          >
-            <option value="A">HLA-A</option>
-            <option value="B">HLA-B</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <div class="tooltip-container">
-            <label for="interactionType">
-              Interaction Type
-              <span class="tooltip">Select the type of molecular interactions to analyze</span>
-            </label>
-          </div>
-          <select
-            id="interactionType"
-            :value="formParams.interactionType"
-            @change="updateParam('interactionType', $event.target.value)"
-            class="form-control"
-          >
-            <option value="Peptide">Peptide Only</option>
-            <option value="TCR">TCR Only</option>
-            <option value="Peptide + TCR">Peptide and TCR</option>
-            <option value="Peptide or TCR">Peptide or TCR</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Deuxième colonne : Distance et Pourcentage -->
-      <div class="form-column">
-        <div class="form-group">
-          <div class="tooltip-container">
-            <label for="distance">
-              Maximum Interaction Distance (Å)
-              <span class="tooltip">Maximum distance (in Angstroms) between residues to consider them in contact</span>
-            </label>
-          </div>
-          <input
-            type="number"
-            id="distance"
-            :value="formParams.distance"
-            @input="updateParam('distance', Number($event.target.value))"
-            min="2"
-            max="10"
-            step="0.5"
-            class="form-control"
-          >
-        </div>
-
-        <div class="form-group">
-          <div class="tooltip-container">
-            <label for="percentage">
-              Minimum Interaction Frequency (%)
-              <span class="tooltip">Minimum percentage of structures where the interaction is observed</span>
-            </label>
-          </div>
-          <input
-            type="number"
-            id="percentage"
-            :value="formParams.percentage"
-            @input="updateParam('percentage', Number($event.target.value))"
-            min="0"
-            max="100"
-            class="form-control"
-          >
-        </div>
-      </div>
-    </div>
-
-
-
-    <!-- Options de filtrage -->
-    <div class="filter-options">
-      <div class="polymorphic-filter">
-        <div class="checkbox-wrapper">
-          <input
-            type="checkbox"
-            id="showPolymorphicOnly"
-            :checked="formParams.showPolymorphicOnly"
-            @change="updateParam('showPolymorphicOnly', $event.target.checked)"
-            class="filter-checkbox"
-          >
-          <label for="showPolymorphicOnly">
-            Do not show non-polymorphic positions
-          </label>
-        </div>
+    <v-card flat class="main-form-card">
+      <v-card-text class="pb-2 pt-3">
         
-        <div class="threshold-input" v-if="formParams.showPolymorphicOnly">
-          <label for="entropyThreshold" class="threshold-label">Entropy threshold:</label>
-          <input
-            type="number"
-            id="entropyThreshold"
-            :value="formParams.entropyThreshold"
-            @input="updateParam('entropyThreshold', Number($event.target.value))"
-            min="0"
-            max="3"
-            step="0.1"
-            class="threshold-control"
-          >
-        </div>
-      </div>
-    </div>
-
-    <!-- Section des allèles optionnels en une ligne -->
-    <div class="optional-alleles">
-      <div class="alleles-row">
-        <label class="optional-label">Compare HLA sequences (optional):</label>
-        <div class="alleles-inputs">
-          <div class="autocomplete-container">
-            <input
-              type="text"
-              :value="formParams.allele1"
-              @input="handleAlleleInput(1, $event.target.value)"
-              @focus="showSuggestions = 1"
-              @blur="handleBlur"
-              class="form-control allele-input"
-              :class="{ 'invalid-allele': invalidAlleles.allele1 }"
-              placeholder="First allele (e.g., A*02:01)"
+        <!-- Première ligne : Locus et Type d'interaction -->
+        <v-row dense>
+          <v-col cols="6">
+            <v-select
+              :model-value="formParams.locus"
+              @update:model-value="updateParam('locus', $event)"
+              :items="[{title: 'HLA-A', value: 'A'}, {title: 'HLA-B', value: 'B'}]"
+              label="HLA Locus"
+              density="comfortable"
+              variant="outlined"
+              hide-details
+              class="select-with-spacing"
             >
-            <div v-if="showSuggestions === 1 && filteredAlleles.length > 0" class="suggestions-list">
-              <div
-                v-for="allele in filteredAlleles"
-                :key="allele"
-                @mousedown.prevent="selectAllele(1, allele)"
-                class="suggestion-item"
-                :class="{ 'selected': allele === formParams.allele1 }"
-              >
-                {{ allele }}
-              </div>
-            </div>
-          </div>
-
-          <div class="autocomplete-container">
-            <input
-              type="text"
-              :value="formParams.allele2"
-              @input="handleAlleleInput(2, $event.target.value)"
-              @focus="showSuggestions = 2"
-              @blur="handleBlur"
-              class="form-control allele-input"
-              :class="{ 'invalid-allele': invalidAlleles.allele2 }"
-              placeholder="Second allele (e.g., A*02:06)"
+              <template #prepend-inner>
+                <v-tooltip bottom>
+                  <template #activator="{ props }">
+                    <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
+                  </template>
+                  Select the specific HLA class I molecule (A or B) for interaction analysis
+                </v-tooltip>
+              </template>
+            </v-select>
+          </v-col>
+          
+          <v-col cols="6">
+            <v-select
+              :model-value="formParams.interactionType"
+              @update:model-value="updateParam('interactionType', $event)"
+              :items="[
+                {title: 'Peptide Only', value: 'Peptide'}, 
+                {title: 'TCR Only', value: 'TCR'}, 
+                {title: 'Peptide and TCR', value: 'Peptide + TCR'},
+                {title: 'Peptide or TCR', value: 'Peptide or TCR'}
+              ]"
+              label="Interaction Type"
+              density="comfortable"
+              variant="outlined"
+              hide-details
+              :menu-props="{ maxHeight: 300 }"
+              item-props
+              class="select-with-spacing"
             >
-            <div v-if="showSuggestions === 2 && filteredAlleles.length > 0" class="suggestions-list">
-              <div
-                v-for="allele in filteredAlleles"
-                :key="allele"
-                @mousedown.prevent="selectAllele(2, allele)"
-                class="suggestion-item"
-                :class="{ 'selected': allele === formParams.allele2 }"
-              >
-                {{ allele }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+              <template #prepend-inner>
+                <v-tooltip bottom>
+                  <template #activator="{ props }">
+                    <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
+                  </template>
+                  Select the type of molecular interactions to analyze
+                </v-tooltip>
+              </template>
+              <template #item="{ props, item }">
+                <v-list-item v-bind="props" :title="item.title" class="interaction-item">
+                  <template #title>
+                    <span class="text-body-2">{{ item.title }}</span>
+                  </template>
+                </v-list-item>
+              </template>
+            </v-select>
+          </v-col>
+        </v-row>
 
-    <!-- Bouton Batch Analysis flottant -->
-    <div class="batch-analysis-floating">
-      <!-- Affichage des positions filtré -->
-<div v-if="filteredPositions && filteredPositions.length > 0" class="selected-positions-display">
-  <span class="positions-label">Filtered positions ({{ filteredPositions.length }}):</span>
-  <div class="positions-list">
-    <span 
-      v-for="(position, index) in filteredPositions" 
-      :key="position"
-      class="position-chip"
-      :class="{ 'selected': selectedPositions.includes(position) }"
-      @click="togglePosition(position)"
-      :title="`Click to ${selectedPositions.includes(position) ? 'deselect' : 'select'} position ${position}`"
-    >
-      {{ position }}<span v-if="index < filteredPositions.length - 1"></span>
-    </span>
-  </div>
-</div>
-      
-      <button
-        @click="openBatchAnalysis"
-        class="batch-floating-button"
-        :disabled="loading"
-        title="Run batch analysis with current parameters"
+        <!-- Deuxième ligne : Distance et Pourcentage avec sliders -->
+        <v-row dense class="mt-3">
+          <v-col cols="6">
+            <div class="slider-group">
+              <label class="slider-label">Distance (Å): {{ formParams.distance }}</label>
+              <v-slider
+                :model-value="formParams.distance"
+                @update:model-value="updateParam('distance', $event)"
+                min="2"
+                max="7.5"
+                step="0.5"
+                density="compact"
+                hide-details
+                thumb-label
+                color="primary"
+              >
+                <template #prepend>
+                  <v-tooltip bottom>
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
+                    </template>
+                    Maximum distance (in Angstroms) between residues to consider them in contact
+                  </v-tooltip>
+                </template>
+              </v-slider>
+            </div>
+          </v-col>
+          
+          <v-col cols="6">
+            <div class="slider-group">
+              <label class="slider-label">Frequency (%): {{ formParams.percentage }}</label>
+              <v-slider
+                :model-value="formParams.percentage"
+                @update:model-value="updateParam('percentage', $event)"
+                min="0"
+                max="100"
+                step="5"
+                density="compact"
+                hide-details
+                thumb-label
+                color="primary"
+              >
+                <template #prepend>
+                  <v-tooltip bottom>
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
+                    </template>
+                    Minimum percentage of structures where the interaction is observed
+                  </v-tooltip>
+                </template>
+              </v-slider>
+            </div>
+          </v-col>
+        </v-row>
+        
+        <!-- Boutons d'actions rapides -->
+        <v-row dense class="mt-2">
+          <v-col cols="8">
+            <v-btn
+              @click="loadExampleAlleles"
+              variant="outlined"
+              size="small"
+              color="primary"
+              class="example-btn"
+            >
+              <v-icon left size="small">mdi-test-tube</v-icon>
+              Compare Example Alleles
+            </v-btn>
+          </v-col>
+          <v-col cols="4" class="text-right">
+            <v-btn
+              @click="resetToDefaults"
+              variant="text"
+              size="small"
+              color="grey"
+              class="reset-btn"
+            >
+              <v-icon size="small">mdi-restore</v-icon>
+              Reset
+            </v-btn>
+          </v-col>
+        </v-row>
+        
+      </v-card-text>
+    </v-card>
+
+    <!-- Section des allèles et filtres -->
+    <v-expansion-panels variant="accordion" class="mt-0 mb-3">
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-dna</v-icon>
+          Allele Comparison (Optional)
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <v-row dense>
+            <v-col cols="6">
+              <v-autocomplete
+                :model-value="formParams.allele1"
+                @update:model-value="handleAlleleSelect(1, $event)"
+                @update:search="handleAlleleInput(1, $event)"
+                :items="allelesList"
+                :search="currentInput"
+                label="First allele"
+                placeholder="e.g., A*02:01"
+                density="compact"
+                variant="outlined"
+                clearable
+                hide-details
+                :error="invalidAlleles.allele1"
+                :loading="isLoadingAlleles"
+                :menu-props="{ maxHeight: 200 }"
+                auto-select-first
+              />
+            </v-col>
+            <v-col cols="6">
+              <v-autocomplete
+                :model-value="formParams.allele2"
+                @update:model-value="handleAlleleSelect(2, $event)"
+                @update:search="handleAlleleInput(2, $event)"
+                :items="allelesList"
+                :search="currentInput"
+                label="Second allele"
+                placeholder="e.g., A*02:06"
+                density="compact"
+                variant="outlined"
+                clearable
+                hide-details
+                :error="invalidAlleles.allele2"
+                :loading="isLoadingAlleles"
+                :menu-props="{ maxHeight: 200 }"
+                auto-select-first
+              />
+            </v-col>
+          </v-row>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+
+    <v-expansion-panels variant="accordion" class="mt-0 mb-3">
+      <v-expansion-panel class="advanced-filters-panel">
+        <v-expansion-panel-title class="py-0 px-2" style="min-height: 28px !important;">
+          <v-icon class="mr-1" size="x-small">mdi-filter-variant</v-icon>
+          <span class="text-caption" style="font-size: 0.7rem !important;">Advanced Filters</span>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text class="pt-1 pb-1 px-2">
+          <!-- Filtre polymorphique ultra-compact -->
+          <div class="advanced-filter-content">
+            <v-checkbox
+              :model-value="formParams.showPolymorphicOnly"
+              @update:model-value="updateParam('showPolymorphicOnly', $event)"
+              label="Hide non-polymorphic positions"
+              density="compact"
+              hide-details
+              class="checkbox-ultra-compact"
+            />
+            
+            <v-slide-y-transition>
+              <div v-if="formParams.showPolymorphicOnly" class="entropy-section">
+                <label class="entropy-label">Entropy: {{ formParams.entropyThreshold }}</label>
+                <v-slider
+                  :model-value="formParams.entropyThreshold"
+                  @update:model-value="updateParam('entropyThreshold', $event)"
+                  min="0"
+                  max="3"
+                  step="0.1"
+                  density="compact"
+                  hide-details
+                  thumb-label
+                  color="secondary"
+                  class="entropy-slider"
+                />
+              </div>
+            </v-slide-y-transition>
+          </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+
+    <!-- Section des positions et batch -->
+      <!-- Affichage amélioré des positions filtrées -->
+      <v-card 
+        v-if="filteredPositions && filteredPositions.length > 0" 
+        variant="outlined" 
+        class="positions-card mb-3"
       >
-        <svg class="batch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <path d="M8 12h8"/>
-          <path d="M12 8v8"/>
-        </svg>
-        <span class="batch-text">Batch Analysis</span>
-      </button>
-    </div>
+        <v-card-title class="py-1 px-3 d-flex align-center">
+          <v-icon class="mr-1" size="x-small">mdi-target</v-icon>
+          <span class="text-caption">Filtered Positions ({{ filteredPositions.length }})</span>
+          <v-spacer></v-spacer>
+          <span class="text-caption selection-count">{{ selectedPositions.length }} selected</span>
+        </v-card-title>
+        
+        <v-card-text class="pt-1 pb-2 px-3">
+          <div class="positions-chips">
+            <v-chip
+              v-for="position in displayedPositions"
+              :key="position"
+              :color="selectedPositions.includes(position) ? 'primary' : 'default'"
+              :variant="selectedPositions.includes(position) ? 'elevated' : 'outlined'"
+              size="x-small"
+              class="position-chip-compact"
+              @click="togglePosition(position)"
+              :title="`Click to ${selectedPositions.includes(position) ? 'deselect' : 'select'} position ${position}`"
+            >
+              {{ position }}
+            </v-chip>
+          </div>
+          
+          <!-- Bouton "Voir plus" si beaucoup de positions -->
+          <div v-if="filteredPositions.length > maxDisplayedPositions" class="text-center mt-1">
+            <v-btn
+              v-if="!showAllPositions"
+              @click="showAllPositions = true"
+              variant="text"
+              size="x-small"
+              color="primary"
+              class="text-caption"
+            >
+              Show {{ filteredPositions.length - maxDisplayedPositions }} more positions
+              <v-icon right size="x-small">mdi-chevron-down</v-icon>
+            </v-btn>
+            <v-btn
+              v-else
+              @click="showAllPositions = false"
+              variant="text"
+              size="x-small"
+              color="primary"
+              class="text-caption"
+            >
+              Show less
+              <v-icon right size="x-small">mdi-chevron-up</v-icon>
+            </v-btn>
+          </div>
+        </v-card-text>
+      </v-card>
+      
+      <!-- Bouton Batch Analysis amélioré avec tooltip -->
+      <v-tooltip bottom>
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            @click="openBatchAnalysis"
+            :disabled="loading"
+            color="secondary"
+            variant="elevated"
+            block
+            class="batch-btn"
+          >
+            <v-icon left>mdi-play-circle</v-icon>
+            Run Batch Analysis
+          </v-btn>
+        </template>
+        <span>Analyze multiple alleles in parallel with current parameters</span>
+      </v-tooltip>
+  </div>
   </div>
 </template>
 
@@ -221,7 +334,7 @@ export default {
         locus: 'A',
         distance: 3,
         percentage: 20,
-        interactionType: 'Peptide',
+        interactionType: 'Peptide or TCR',
         allele1: '',
         allele2: '',
         showPolymorphicOnly: true,
@@ -250,7 +363,9 @@ export default {
       invalidAlleles: {
         allele1: false,
         allele2: false
-      }
+      },
+      showAllPositions: false,
+      maxDisplayedPositions: 20
     }
   },
   watch: {
@@ -265,17 +380,35 @@ export default {
     },
     'formParams.allele2'(newValue) {
       this.validateAllele('allele2', newValue);
+    },
+    filteredPositions() {
+      // Reset "show all" when positions change for better UX
+      this.showAllPositions = false;
     }
   },
   methods: {
     async loadAlleles(locus) {
       try {
         this.isLoadingAlleles = true;
-        const response = await fetch(`/data/alleles${locus}.txt`);
+        // Utiliser le bon nom de fichier
+        const response = await fetch(`/data/Alleles${locus}.txt`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const text = await response.text();
+        
+        // Vérifier si on a reçu du HTML (erreur 404 etc.)
+        if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+          throw new Error('Received HTML instead of alleles data');
+        }
+        
         this.allelesList = text.split('\n')
           .map(line => line.trim())
-          .filter(line => line && !line.startsWith('#'));
+          .filter(line => line && !line.startsWith('#') && line.includes('*'));
+        
+        console.log(`Loaded ${this.allelesList.length} alleles for locus ${locus}`);
         
         // Revalider les allèles après chargement de la nouvelle liste
         this.validateAllele('allele1', this.formParams.allele1);
@@ -288,13 +421,20 @@ export default {
       }
     },
     validateAllele(alleleField, value) {
-      if (!value) {
+      if (!value || value.trim() === '') {
         this.invalidAlleles[alleleField] = false;
         return;
       }
+      
+      // Attendre que les allèles soient chargés avant de valider
+      if (this.isLoadingAlleles || this.allelesList.length === 0) {
+        this.invalidAlleles[alleleField] = false;
+        return;
+      }
+      
       this.invalidAlleles[alleleField] = !this.allelesList.includes(value);
     },
-        togglePosition(position) {
+    togglePosition(position) {
       // Émettre l'événement vers le parent pour qu'il gère la sélection
       this.$emit('position-clicked', position);
     },
@@ -311,21 +451,17 @@ export default {
       });
     },
     handleAlleleInput(inputNumber, value) {
-      this.currentInput = value;
-      this.showSuggestions = inputNumber;
-      this.updateParam(`allele${inputNumber}`, value);
+      this.currentInput = value || '';
+      // Ne pas mettre à jour le param ici pour éviter la validation prématurée
+    },
+    handleAlleleSelect(inputNumber, value) {
+      this.updateParam(`allele${inputNumber}`, value || '');
+      this.currentInput = '';
     },
     selectAllele(inputNumber, allele) {
       this.updateParam(`allele${inputNumber}`, allele);
-      this.showSuggestions = null;
       this.currentInput = '';
       // La validation se fera automatiquement via le watcher
-    },
-    handleBlur() {
-      setTimeout(() => {
-        this.showSuggestions = null;
-        this.currentInput = '';
-      }, 200);
     },
     openBatchAnalysis() {
       const currentParams = {
@@ -335,17 +471,76 @@ export default {
         interactionType: this.formParams.interactionType
       };
       this.$emit('open-batch-analysis', currentParams);
+    },
+    loadExampleAlleles() {
+      // Définir les allèles d'exemple selon le locus
+      const exampleAlleles = {
+        A: ['A*02:01', 'A*03:01'],
+        B: ['B*07:02', 'B*08:01']
+      };
+      
+      const examples = exampleAlleles[this.formParams.locus];
+      this.updateParam('allele1', examples[0]);
+      this.updateParam('allele2', examples[1]);
+      
+      // Ouvrir automatiquement le panel de comparaison d'allèles
+      // On peut pas directement manipuler v-expansion-panels, donc on utilise un petit hack
+      this.$nextTick(() => {
+        const expansionPanels = this.$el.querySelector('.v-expansion-panels');
+        if (expansionPanels) {
+          const allelePanel = expansionPanels.querySelectorAll('.v-expansion-panel')[0]; // Premier panel = Allele Comparison
+          if (allelePanel && !allelePanel.classList.contains('v-expansion-panel--active')) {
+            const button = allelePanel.querySelector('.v-expansion-panel-title');
+            if (button) button.click();
+          }
+        }
+      });
+    },
+    resetToDefaults() {
+      // Reset vers les valeurs par défaut
+      const defaultParams = {
+        locus: 'A',
+        distance: 3,
+        percentage: 20,
+        interactionType: 'Peptide or TCR',
+        allele1: '',
+        allele2: '',
+        showPolymorphicOnly: true,
+        entropyThreshold: 0.2
+      };
+      
+      // Mettre à jour tous les paramètres
+      Object.keys(defaultParams).forEach(key => {
+        this.updateParam(key, defaultParams[key]);
+      });
+      
+      // Reset des états internes
+      this.invalidAlleles.allele1 = false;
+      this.invalidAlleles.allele2 = false;
+      this.showAllPositions = false;
     }
   },
   computed: {
     filteredAlleles() {
       if (this.isLoadingAlleles) return [];
-      if (!this.currentInput) return this.allelesList.slice(0, 10);
+      
+      // Toujours montrer les premiers allèles par défaut
+      if (!this.currentInput || this.currentInput.trim() === '') {
+        return this.allelesList.slice(0, 15);
+      }
       
       const input = this.currentInput.toLowerCase();
-      return this.allelesList
+      const filtered = this.allelesList
         .filter(allele => allele.toLowerCase().includes(input))
-        .slice(0, 10);
+        .slice(0, 15);
+        
+      return filtered;
+    },
+    displayedPositions() {
+      if (this.showAllPositions || this.filteredPositions.length <= this.maxDisplayedPositions) {
+        return this.filteredPositions;
+      }
+      return this.filteredPositions.slice(0, this.maxDisplayedPositions);
     }
   }
 }
@@ -356,434 +551,427 @@ export default {
 @import '../styles/tooltip.css';
 
 .form-container {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 15px;
-}
-
-.main-form {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.form-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.form-control {
-  padding: 0.35rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-/* Auto-update indicator */
-.auto-update-indicator {
-  margin: 1rem 0;
-  padding: 0.75rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  text-align: center;
-}
-
-.indicator-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  color: #495057;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.auto-icon {
-  width: 16px;
-  height: 16px;
-  animation: gentle-spin 3s linear infinite;
-}
-
-@keyframes gentle-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.indicator-text {
-  color: #6c757d;
-}
-
-.filter-options {
-  margin: 1rem 0;
-  padding: 0.5rem 0;
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
-}
-
-.polymorphic-filter {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-}
-
-.checkbox-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.filter-checkbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.threshold-input {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.threshold-label {
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.threshold-control {
-  width: 60px;
-  padding: 0.25rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.optional-alleles {
-  margin-bottom: 1.5rem;
-}
-
-.alleles-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.optional-label {
-  white-space: nowrap;
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-.alleles-inputs {
-  display: flex;
-  gap: 1rem;
-  flex: 1;
-}
-
-.allele-input {
-  flex: 1;
-}
-
-/* Section Batch Analysis redessinée */
-.batch-analysis-section {
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-  border: 1px solid #d6d9e7;
-  border-radius: 8px;
-  position: relative;
-}
-
-.section-header {
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.section-header h4 {
-  margin: 0 0 0.5rem 0;
-  color: #4c63d2;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.section-description {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.batch-analysis-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
   width: 100%;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  max-width: 380px;
+  padding: 0;
+  margin: 0 auto;
 }
 
-.batch-analysis-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+/* Wrapper unique harmonisé */
+.form-wrapper {
+  background: rgba(248, 249, 250, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(224, 224, 224, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  max-width: 420px;
+  margin: 0 auto;
 }
 
-.batch-analysis-button:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+.main-form-card {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
-.batch-icon,
-.arrow-icon {
-  width: 18px;
-  height: 18px;
+.slider-group {
+  padding: 0.5rem 0;
 }
 
-.arrow-icon {
-  transition: transform 0.2s ease;
+.slider-group-compact {
+  padding: 0.25rem 0;
 }
 
-.batch-analysis-button:hover:not(:disabled) .arrow-icon {
-  transform: translateX(2px);
+.slider-group-ultra-compact {
+  padding: 0.125rem 0;
 }
 
-label {
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-.autocomplete-container {
-  position: relative;
-  flex: 1;
-}
-
-.suggestions-list {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  max-height: 180px;
-  overflow-y: auto;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  z-index: 1000;
-}
-
-.suggestion-item {
-  padding: 6px 10px;
+.slider-label {
   font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  display: block;
 }
 
-.suggestion-item:hover,
-.suggestion-item.selected {
-  background-color: #f0f0f0;
+.slider-label-compact {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.125rem;
+  display: block;
 }
 
-/* Ajustements pour le responsive */
+.slider-label-ultra-compact {
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 0.05rem;
+  display: block;
+}
+
+.checkbox-compact :deep(.v-input__control) {
+  min-height: 24px !important;
+}
+
+.checkbox-compact :deep(.v-selection-control__wrapper) {
+  height: 24px !important;
+}
+
+.slider-compact {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Styles pour le panel Advanced Filters séparé et ultra-compact */
+.advanced-filters-panel {
+  max-width: 100%;
+}
+
+.advanced-filters-panel .v-expansion-panel-title {
+  font-size: 0.7rem !important;
+  line-height: 1.2 !important;
+  padding: 2px 8px !important;
+  min-height: 28px !important;
+}
+
+.advanced-filter-content {
+  margin: 0;
+  padding: 0;
+}
+
+.checkbox-ultra-compact {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.checkbox-ultra-compact :deep(.v-input__control) {
+  min-height: 20px !important;
+  margin: 0 !important;
+}
+
+.checkbox-ultra-compact :deep(.v-selection-control) {
+  min-height: 20px !important;
+  align-items: center;
+}
+
+.checkbox-ultra-compact :deep(.v-selection-control__wrapper) {
+  height: 20px !important;
+  margin-right: 4px !important;
+}
+
+.checkbox-ultra-compact :deep(.v-label) {
+  font-size: 0.7rem !important;
+  line-height: 1.2 !important;
+}
+
+.entropy-section {
+  margin-top: 4px;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.entropy-label {
+  font-size: 0.65rem !important;
+  color: #666;
+  display: block;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.entropy-slider {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.entropy-slider :deep(.v-slider) {
+  margin: 0 !important;
+  min-height: 20px !important;
+}
+
+.entropy-slider :deep(.v-slider__container) {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ajuster légèrement la taille du cadre des selects */
+.select-with-spacing :deep(.v-field) {
+  min-height: 48px !important;
+}
+
+.select-with-spacing :deep(.v-field__field) {
+  min-height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.select-with-spacing :deep(.v-field__outline) {
+  min-height: 48px !important;
+}
+
+.select-with-spacing :deep(.v-field__input) {
+  min-height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: 0.875rem !important;
+  padding-right: 32px !important;
+}
+
+.select-with-spacing :deep(.v-select__selection) {
+  font-size: 0.875rem !important;
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.select-with-spacing :deep(.v-select__selection-text) {
+  font-size: 0.875rem !important;
+  line-height: normal !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  width: 100% !important;
+}
+
+.select-with-spacing :deep(.v-field__append-inner) {
+  height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .main-form {
-    flex-direction: column;
-    gap: 1rem;
+  .form-container {
+    max-width: 100%;
+    padding: 0.5rem;
   }
   
-  .alleles-row {
-    flex-direction: column;
-    align-items: stretch;
+  .main-form-card .v-card-text {
+    padding: 0.5rem !important;
   }
   
-  .optional-label {
-    margin-bottom: 0.5rem;
+  .slider-group {
+    padding: 0.25rem 0;
   }
   
-  .polymorphic-filter {
-    flex-direction: column;
-    align-items: flex-start;
+  .slider-group-compact {
+    padding: 0.125rem 0;
   }
   
-  .threshold-input {
-    margin-left: 1.5rem;
-    margin-top: 0.5rem;
+  .slider-group-ultra-compact {
+    padding: 0.05rem 0;
   }
   
-  .batch-floating-button {
-    position: relative;
-    top: 0;
-    right: 0;
-    margin-top: 1rem;
-    width: 100%;
-    justify-content: center;
+  .slider-label {
+    font-size: 0.8rem;
   }
   
-  .selected-positions-display {
-    margin-right: 0;
-    margin-bottom: 0.5rem;
-    text-align: center;
+  .slider-label-compact {
+    font-size: 0.7rem;
+  }
+  
+  .slider-label-ultra-compact {
+    font-size: 0.65rem;
+  }
+  
+  .positions-card .v-card-title {
+    font-size: 0.8rem !important;
+    padding: 0.5rem !important;
+  }
+  
+  .selection-count {
+    font-size: 0.65rem !important;
+  }
+  
+  .positions-card .v-card-text {
+    padding: 0.25rem !important;
+  }
+  
+  .position-chip-compact {
+    font-size: 0.65rem !important;
+    height: 18px !important;
+    min-width: 24px !important;
+  }
+  
+  .advanced-filters-panel .v-expansion-panel-title {
+    padding: 1px 6px !important;
+    min-height: 24px !important;
+    font-size: 0.65rem !important;
+  }
+  
+  .checkbox-ultra-compact :deep(.v-label) {
+    font-size: 0.65rem !important;
+  }
+  
+  .entropy-label {
+    font-size: 0.6rem !important;
   }
 }
 
-.invalid-allele {
-  border-color: #dc3545;
-  box-shadow: 0 0 0 2px #dc3545;
+@media (max-width: 480px) {
+  .positions-chips {
+    gap: 0.125rem;
+  }
+  
+  .position-chip-vuetify {
+    font-size: 0.7rem !important;
+    height: 22px !important;
+    min-width: auto !important;
+  }
+  
+  .batch-btn {
+    font-size: 0.85rem !important;
+  }
+  
+  .example-btn {
+    font-size: 0.75rem !important;
+  }
+  
+  .reset-btn {
+    font-size: 0.7rem !important;
+    padding: 0 6px !important;
+  }
+  
+  /* Responsive pour les boutons d'actions */
+  .example-btn .v-icon {
+    display: none !important;
+  }
+  
+  .example-btn {
+    padding: 0 8px !important;
+  }
 }
 
-.invalid-allele:focus {
-  border-color: #dc3545;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
-/* Bouton Batch Analysis flottant */
+/* Section des positions et batch */
 .batch-analysis-floating {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
   margin-top: 1rem;
 }
 
-.selected-positions-display {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
-  color: #495057;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  animation: slideInFromRight 0.3s ease-out;
+.positions-card {
+  max-width: 100%;
 }
 
-.positions-label {
-  font-weight: 600;
-  color: #6c757d;
-  margin-right: 0.5rem;
+.positions-card .v-card-title {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  min-height: 32px !important;
 }
 
-.positions-list {
-  font-weight: 500;
-  color: #495057;
-  font-family: 'Courier New', monospace;
+.selection-count {
+  color: #1976d2 !important;
+  font-weight: 500 !important;
+  font-size: 0.7rem !important;
 }
 
-.batch-floating-button {
+.positions-chips {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
-  border: none;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+  flex-wrap: wrap;
+  gap: 0.125rem;
+  align-items: flex-start;
 }
 
-.batch-floating-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-}
-
-.batch-floating-button:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.2);
-}
-
-.batch-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.batch-text {
-  white-space: nowrap;
-}
-
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Mise à jour des styles responsive */
-@media (max-width: 768px) {
-  .batch-analysis-floating {
-    align-items: center;
-  }
-  
-  .batch-floating-button {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .selected-positions-display {
-    text-align: center;
-    margin-bottom: 0.5rem;
-  }
-}
-
-.positions-list {
-  font-weight: 500;
-  color: #495057;
-  font-family: 'Courier New', monospace;
-  line-height: 1.4;
-}
-
-.position-chip {
-  display: inline-block;
-  padding: 2px 6px;
-  margin: 1px;
-  border-radius: 12px;
-  cursor: pointer;
+.position-chip-compact {
+  cursor: pointer !important;
   transition: all 0.2s ease;
-  background-color: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  font-family: 'Courier New', monospace !important;
+  font-weight: 500 !important;
+  margin: 0 !important;
+  height: 20px !important;
+  font-size: 0.7rem !important;
+  min-width: 28px !important;
 }
 
-.position-chip:hover {
-  background-color: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.4);
+.position-chip-compact:hover {
   transform: translateY(-1px);
 }
 
-.position-chip.selected {
-  background-color: #6366f1;
-  color: white;
-  border-color: #6366f1;
-  font-weight: 600;
+.batch-btn {
+  font-weight: 500 !important;
+  text-transform: none !important;
+  transition: all 0.3s ease;
 }
 
-.position-chip.selected:hover {
-  background-color: #5856eb;
-  border-color: #5856eb;
+/* Transitions pour une meilleure UX */
+.v-expansion-panels {
+  transition: all 0.3s ease;
+}
+
+.positions-card {
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slider-group {
+  transition: all 0.2s ease;
+}
+
+/* Styles pour les nouveaux boutons */
+.example-btn {
+  text-transform: none !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+}
+
+.reset-btn {
+  text-transform: none !important;
+  font-size: 0.75rem !important;
+  opacity: 0.7;
+  min-width: auto !important;
+  padding: 0 8px !important;
+}
+
+.reset-btn:hover {
+  opacity: 1;
+}
+
+/* Correction de l'affichage des items du select */
+.interaction-item {
+  font-size: 0.85rem !important;
+}
+
+.interaction-item .v-list-item__title {
+  font-size: 0.85rem !important;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Amélioration de l'affichage du select */
+:deep(.v-select .v-field__input) {
+  font-size: 0.85rem !important;
+  min-height: auto !important;
+  padding: 0 !important;
+}
+
+:deep(.v-select .v-field__append-inner) {
+  padding-left: 4px !important;
+}
+
+/* Amélioration de l'accessibilité */
+.position-chip-vuetify:focus {
+  outline: 2px solid var(--v-theme-primary);
+  outline-offset: 2px;
+}
+
+.batch-btn:focus {
+  outline: 2px solid var(--v-theme-secondary);
+  outline-offset: 2px;
+}
+
+.example-btn:focus,
+.reset-btn:focus {
+  outline: 2px solid var(--v-theme-primary);
+  outline-offset: 2px;
 }
 </style>
