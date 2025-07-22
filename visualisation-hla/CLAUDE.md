@@ -31,10 +31,11 @@ This is a Vue 3 application for HLA (Human Leukocyte Antigen) sequence analysis 
 
 ### Main Application Structure
 
-**App.vue**: Main application container with navigation between three views:
-- Sequence Analysis (`HlaSequenceAnalysis.vue`)
+**App.vue**: Main application container with navigation between four main views:
+- Divergence Calculation (`HlaSequenceAnalysis.vue`)
 - Structures Database (`HlaStructuresView.vue`)  
-- Batch Analysis (`BatchAnalysis.vue`)
+- Statistics (`StatisticsView.vue`)
+- Tutorial (`TutorialView.vue`)
 
 ### Core Components
 
@@ -50,6 +51,17 @@ This is a Vue 3 application for HLA (Human Leukocyte Antigen) sequence analysis 
 - Bulk PDB file download with ZIP compression
 - CSV export functionality
 
+**StatisticsView.vue** (`src/components/Statistics/StatisticsView.vue`):
+- Dedicated statistics page with D3.js visualizations
+- Interactive pie charts for database distributions
+- Comprehensive statistical analysis of HLA data
+
+**TutorialView.vue** (`src/components/Tutorial/TutorialView.vue`):
+- Comprehensive tutorial system with 8 sections
+- Interactive navigation with scroll-to-section functionality
+- Scientific explanations of HED calculations and methodology
+- Step-by-step workflow guidance
+
 ### Key Services
 
 **hlaService.js** (`src/services/hlaService.js`):
@@ -57,6 +69,7 @@ This is a Vue 3 application for HLA (Human Leukocyte Antigen) sequence analysis 
 - Parallel CSV loading for performance
 - Complex position analysis based on peptide/TCR interactions
 - Allele-specific sequence comparison with Grantham scoring
+- HED (HLA Evolutionary Distance) calculations
 - Key methods: `getPatchPosition()`, `calculateAlleleSpecificPositions()`
 
 **entropyService.js** (`src/services/entropyService.js`):
@@ -83,7 +96,7 @@ This is a Vue 3 application for HLA (Human Leukocyte Antigen) sequence analysis 
 1. **CSV Data Loading**: Parallel loading of A.csv, B.csv, mhc_contacts_peptides.csv
 2. **Multi-level Filtering**: Distance → Interaction type → Percentage → Entropy
 3. **Real-time Analysis**: Debounced calculations preserve user interactions
-4. **Comparative Analysis**: Allele sequence alignment with divergence calculations
+4. **Comparative Analysis**: Allele sequence alignment with HED calculations
 
 ### Technology Stack
 
@@ -108,6 +121,16 @@ This is a Vue 3 application for HLA (Human Leukocyte Antigen) sequence analysis 
 - Follow Vue 3 Composition API patterns consistently
 - Maintain caching strategies for data-intensive operations
 - Component styling uses a mix of global styles and component-specific CSS
+- Tutorial links use localStorage-based navigation for cross-tab functionality
+- HED terminology used consistently throughout (replaced "Classical Divergence")
+
+### User Interface Features
+
+- **Interactive Tutorial System**: Comprehensive 8-section tutorial with scroll navigation
+- **Contextual Help Links**: Discrete help icons throughout the interface linking to relevant tutorial sections
+- **Modern Material Design**: Clean, professional interface using Vuetify 3 components
+- **Responsive Layout**: Optimized for desktop and mobile viewing
+- **Smart Navigation**: Tutorial opens in new tabs with automatic section navigation
 
 ### Performance Considerations
 

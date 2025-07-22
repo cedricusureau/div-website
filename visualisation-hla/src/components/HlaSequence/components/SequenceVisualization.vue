@@ -167,25 +167,130 @@
       </defs>
     </svg>
 
-    <!-- Ligne de comparaison des allèles sous la frise -->
-    <div class="allele-comparison-line" v-if="alleleSpecificPositionsResult?.mismatches?.length">
-      {{ alleleSpecificPositionsResult.mismatches[0]?.allele1?.allele || 'N/A' }} vs {{ alleleSpecificPositionsResult.mismatches[0]?.allele2?.allele || 'N/A' }} • 
-      {{ alleleSpecificPositionsResult.totalMismatches || 0 }} mismatches
-      <span v-if="getFilteredMismatchCount() > 0" class="filtered-mismatches">
-        ({{ getFilteredMismatchCount() }} in filtered positions)
-      </span>
-    </div>
-    
-    <!-- Divergence Analysis dans la même section -->
-    <div v-if="classicalDivergence !== null || specificDivergence !== null" class="divergence-info">
-      <div class="divergence-container">
-        <div class="divergence-item">
-          <span class="divergence-label">Classical Divergence (HED):</span>
-          <span class="divergence-value">{{ classicalDivergence !== null ? classicalDivergence.toFixed(2) : 'N/A' }}</span>
+    <!-- Interface de comparaison d'allèles -->
+    <div class="allele-comparison-section">
+      <!-- Bouton pour déployer l'interface de comparaison -->
+      <div class="comparison-toggle" v-if="!showAlleleComparison">
+        <button @click="showAlleleComparison = true" class="compare-btn">
+          <span class="compare-icon">🧬</span>
+          <span class="compare-text">Compare Alleles</span>
+        </button>
+      </div>
+
+      <!-- Interface de comparaison déployée -->
+      <div v-if="showAlleleComparison" class="allele-comparison-expanded">
+        <div class="comparison-header">
+          <span class="comparison-title">
+            <span class="title-icon">🧬</span>
+            Compare Alleles
+          </span>
+          <button @click="closeComparison" class="close-btn" title="Close comparison">×</button>
         </div>
-        <div class="divergence-item">
-          <span class="divergence-label">Targeted Divergence:</span>
-          <span class="divergence-value">{{ specificDivergence !== null ? specificDivergence.toFixed(2) : 'N/A' }}</span>
+        
+        <div class="allele-inputs">
+          <div class="allele-input-group">
+            <input
+              v-model="allele1Input"
+              @input="handleAllele1Input"
+              @focus="showSuggestions1 = true"
+              @blur="hideSuggestions1"
+              placeholder="First allele (e.g., A*02:01)"
+              class="allele-input"
+              :class="{ 'has-value': currentAllele1 }"
+            />
+            <div v-if="showSuggestions1 && filteredAlleles1.length > 0" class="suggestions-dropdown">
+              <div
+                v-for="allele in filteredAlleles1"
+                :key="allele"
+                @mousedown="selectAllele(1, allele)"
+                class="suggestion-item"
+              >
+                {{ allele }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="vs-divider">
+            <span>vs</span>
+          </div>
+          
+          <div class="allele-input-group">
+            <input
+              v-model="allele2Input"
+              @input="handleAllele2Input"
+              @focus="showSuggestions2 = true"
+              @blur="hideSuggestions2"
+              placeholder="Second allele (e.g., A*03:01)"
+              class="allele-input"
+              :class="{ 'has-value': currentAllele2 }"
+            />
+            <div v-if="showSuggestions2 && filteredAlleles2.length > 0" class="suggestions-dropdown">
+              <div
+                v-for="allele in filteredAlleles2"
+                :key="allele"
+                @mousedown="selectAllele(2, allele)"
+                class="suggestion-item"
+              >
+                {{ allele }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="action-buttons">
+            <button 
+              @click="loadExampleAlleles"
+              class="action-btn example-btn"
+              :disabled="isLoadingAlleles"
+              title="Load example alleles"
+            >
+              Example
+            </button>
+            <button 
+              @click="resetAlleles"
+              class="action-btn reset-btn"
+              title="Reset alleles"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+        
+        <!-- Résultats compacts -->
+        <div v-if="alleleSpecificPositionsResult?.mismatches?.length || hed !== null || specificDivergence !== null" class="comparison-results-compact">
+          <div class="results-header">
+            <span class="results-title">Divergence Results</span>
+            <v-tooltip bottom>
+              <template #activator="{ props }">
+                <button
+                  v-bind="props"
+                  @click="openTutorial"
+                  class="tutorial-link-small"
+                  title="Learn about divergence calculations"
+                >
+                  <v-icon size="x-small">mdi-help-circle-outline</v-icon>
+                </button>
+              </template>
+              Understanding divergence calculations
+            </v-tooltip>
+          </div>
+          <div class="results-line">
+            <span v-if="alleleSpecificPositionsResult?.mismatches?.length" class="result-compact">
+              <strong>{{ alleleSpecificPositionsResult.totalMismatches || 0 }} mismatches</strong>
+              <span 
+                v-if="getFilteredMismatchCount() > 0" 
+                class="result-filtered-highlight"
+                :title="'Number of mismatches in selected positions (red arrows on the sequence)'"
+              >
+                {{ getFilteredMismatchCount() }} filtered
+              </span>
+            </span>
+            <span v-if="hed !== null" class="result-compact">
+              <span class="result-label-compact">HED:</span> <strong>{{ hed.toFixed(2) }}</strong>
+            </span>
+            <span v-if="specificDivergence !== null" class="result-compact">
+              <span class="result-label-compact">Targeted Divergence:</span> <strong>{{ specificDivergence.toFixed(2) }}</strong>
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -193,9 +298,33 @@
     
     <!-- Interactions Details (Sankey Diagram) -->
     <div class="interactions-section" v-if="positions && Object.keys(positions).length > 0" ref="accordionSection">
-      <div class="interactions-header clickable-header" @click="togglePeptideInteractions">
-        <span class="interactions-title">Interactions Details (Sankey Diagram)</span>
-        <span class="interactions-icon">{{ showPeptideInteractions ? '▲' : '▼' }}</span>
+      <div class="interactions-header">
+        <div class="interactions-title-row clickable-header" @click="togglePeptideInteractions">
+          <span class="interactions-title">Interactions Details (Sankey Diagram)</span>
+          <span class="interactions-icon">{{ showPeptideInteractions ? '▲' : '▼' }}</span>
+        </div>
+        
+        <!-- Section positions toujours visible -->
+        <div class="positions-selector-section">
+          <div class="positions-selector-header">
+            <span class="position-icon">👁️</span>
+            <span class="selector-text">Watch interaction details for selected positions</span>
+            <span class="selection-count">
+              {{ selectedPositions.length }} / {{ Object.keys(positions).length }} selected
+            </span>
+          </div>
+          
+          <div class="positions-chips">
+            <button
+              v-for="position in Object.keys(positions).sort((a, b) => Number(a) - Number(b))"
+              :key="position"
+              :class="['position-chip', { 'selected': selectedPositions.includes(position) }]"
+              @click="handleClick(parseInt(position))"
+            >
+              {{ position }}
+            </button>
+          </div>
+        </div>
       </div>
       
       <transition name="slide">
@@ -228,7 +357,7 @@ export default {
       type: Object,
       default: () => ({})
     },
-    classicalDivergence: {
+    hed: {
       type: Number,
       default: null
     },
@@ -247,6 +376,10 @@ export default {
     selectedPositions: {
       type: Array,
       default: () => []
+    },
+    currentLocus: {
+      type: String,
+      default: 'A'
     }
   },
   data() {
@@ -258,7 +391,17 @@ export default {
         'Peptide': '#FF6B6B',
         'TCR': '#4ECDC4',
         'Peptide + TCR': '#A78ADB'
-      }
+      },
+      // États pour la sélection d'allèles
+      currentAllele1: '',
+      currentAllele2: '',
+      allelesList: [],
+      isLoadingAlleles: false,
+      showAlleleComparison: false,
+      allele1Input: '',
+      allele2Input: '',
+      showSuggestions1: false,
+      showSuggestions2: false,
     }
   },
   computed: {
@@ -271,6 +414,22 @@ export default {
       return this.selectedPositions.length > 0 
         ? this.selectedPositions 
         : (this.positions ? Object.keys(this.positions) : []);
+    },
+    filteredAlleles1() {
+      if (!this.allele1Input || this.allele1Input.length < 1) {
+        return this.allelesList.slice(0, 10);
+      }
+      return this.allelesList
+        .filter(allele => allele.toLowerCase().includes(this.allele1Input.toLowerCase()))
+        .slice(0, 10);
+    },
+    filteredAlleles2() {
+      if (!this.allele2Input || this.allele2Input.length < 1) {
+        return this.allelesList.slice(0, 10);
+      }
+      return this.allelesList
+        .filter(allele => allele.toLowerCase().includes(this.allele2Input.toLowerCase()))
+        .slice(0, 10);
     }
   },
   watch: {
@@ -285,9 +444,27 @@ export default {
         }
       },
       immediate: false
+    },
+    currentLocus: {
+      handler(newLocus) {
+        if (newLocus) {
+          this.loadAlleles(newLocus);
+        }
+      },
+      immediate: true
+    }
+  },
+  mounted() {
+    // Charger les allèles au montage du composant
+    if (this.currentLocus) {
+      this.loadAlleles(this.currentLocus);
     }
   },
   methods: {
+    openTutorial() {
+      localStorage.setItem('tutorialSection', 'section-divergence');
+      window.open(window.location.origin + '?openTutorial=true', '_blank');
+    },
     handleClick(position) {
       console.log('🎭 Sequence position clicked:', position);
       
@@ -342,10 +519,15 @@ export default {
       if (!this.alleleSpecificPositionsResult?.mismatches || !this.positions) {
         return 0;
       }
-      // Compter les mismatches qui sont dans les positions filtrées (celles affichées dans la frise)
-      return this.alleleSpecificPositionsResult.mismatches.filter(mismatch => 
-        Object.keys(this.positions).includes(String(mismatch.position))
-      ).length;
+      // Utiliser les mêmes positions que le calcul de divergence
+      // Convertir en strings pour cohérence avec le service
+      const positionsAsStrings = Object.keys(this.positions).map(pos => String(pos));
+      const filteredMismatches = this.alleleSpecificPositionsResult.mismatches.filter(mismatch => 
+        positionsAsStrings.includes(String(mismatch.position))
+      );
+      
+      
+      return filteredMismatches.length;
     },
     showTooltip(position) {
       this.hoveredPosition = position;
@@ -356,6 +538,116 @@ export default {
     getXPosition(position) {
       const positionNum = parseInt(position, 10);
       return 50 + (positionNum * 700/180);
+    },
+    
+    // Méthodes pour la gestion des allèles
+    async loadAlleles(locus) {
+      try {
+        this.isLoadingAlleles = true;
+        const response = await fetch(`/data/${locus}.csv`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const csvText = await response.text();
+        const lines = csvText.split('\n');
+        const headers = lines[0].split(';');
+        const aaIndex = headers.indexOf('AA');
+        
+        if (aaIndex === -1) throw new Error('Column AA not found');
+        
+        this.allelesList = lines.slice(1)
+          .map(line => line.split(';')[aaIndex])
+          .filter(allele => allele && allele.trim() !== '')
+          .sort();
+          
+      } catch (error) {
+        console.error(`Error loading alleles for ${locus}:`, error);
+        this.allelesList = [];
+      } finally {
+        this.isLoadingAlleles = false;
+      }
+    },
+    
+    handleAllele1Input(event) {
+      this.allele1Input = event.target.value;
+      this.showSuggestions1 = true;
+    },
+    
+    handleAllele2Input(event) {
+      this.allele2Input = event.target.value;
+      this.showSuggestions2 = true;
+    },
+    
+    selectAllele(alleleNumber, allele) {
+      if (alleleNumber === 1) {
+        this.currentAllele1 = allele;
+        this.allele1Input = allele;
+        this.showSuggestions1 = false;
+      } else {
+        this.currentAllele2 = allele;
+        this.allele2Input = allele;
+        this.showSuggestions2 = false;
+      }
+      
+      // Émettre l'événement vers le parent pour mettre à jour les paramètres
+      this.$emit('allele-changed', {
+        allele1: this.currentAllele1,
+        allele2: this.currentAllele2
+      });
+    },
+    
+    hideSuggestions1() {
+      setTimeout(() => {
+        this.showSuggestions1 = false;
+      }, 150);
+    },
+    
+    hideSuggestions2() {
+      setTimeout(() => {
+        this.showSuggestions2 = false;
+      }, 150);
+    },
+    
+    closeComparison() {
+      this.showAlleleComparison = false;
+      // Optionnel: reset des allèles si souhaité
+      // this.currentAllele1 = '';
+      // this.currentAllele2 = '';
+      // this.allele1Input = '';
+      // this.allele2Input = '';
+    },
+    
+    loadExampleAlleles() {
+      const currentLocus = this.currentLocus || 'A';
+      
+      const exampleAlleles = {
+        A: ['A*02:01', 'A*03:01'],
+        B: ['B*07:02', 'B*08:01']
+      };
+      
+      const examples = exampleAlleles[currentLocus] || exampleAlleles.A;
+      
+      this.currentAllele1 = examples[0];
+      this.currentAllele2 = examples[1];
+      this.allele1Input = examples[0];
+      this.allele2Input = examples[1];
+      this.showAlleleComparison = true; // Déployer l'interface
+      
+      this.$emit('allele-changed', {
+        allele1: this.currentAllele1,
+        allele2: this.currentAllele2
+      });
+    },
+    
+    resetAlleles() {
+      this.currentAllele1 = '';
+      this.currentAllele2 = '';
+      this.allele1Input = '';
+      this.allele2Input = '';
+      
+      this.$emit('allele-changed', {
+        allele1: '',
+        allele2: ''
+      });
     },
     getArrowLength(score) {
       const minLength = 15;
@@ -528,10 +820,13 @@ svg {
 }
 
 .interactions-header {
+  padding: 8px 0;
+}
+
+.interactions-title-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
   cursor: pointer;
   user-select: none;
   border-bottom: 1px solid rgba(224, 224, 224, 0.3);
@@ -592,6 +887,549 @@ svg {
   overflow: hidden;
 }
 
+/* Styles pour la sélection de positions dans l'accordéon Sankey */
+.positions-selector-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(224, 224, 224, 0.3);
+}
+
+.positions-selector-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.position-icon {
+  font-size: 16px;
+}
+
+.selector-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.selection-count {
+  font-size: 12px;
+  color: #666;
+  background: rgba(74, 144, 226, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(74, 144, 226, 0.3);
+}
+
+.positions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.positions-chips .position-chip {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #666;
+  min-width: 32px;
+  text-align: center;
+}
+
+.positions-chips .position-chip:hover {
+  border-color: #4a90e2;
+  background: rgba(74, 144, 226, 0.05);
+  transform: translateY(-1px);
+}
+
+.positions-chips .position-chip.selected {
+  background: #4a90e2;
+  border-color: #4a90e2;
+  color: white;
+  font-weight: 600;
+}
+
+.positions-chips .position-chip.selected:hover {
+  background: #2d5aa0;
+  border-color: #2d5aa0;
+}
+
+/* Styles pour la section de comparaison d'allèles */
+.allele-comparison-section {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Bouton de comparaison */
+.comparison-toggle {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.compare-btn {
+  background: linear-gradient(135deg, #4a90e2 0%, #2d5aa0 100%);
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.compare-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+  background: linear-gradient(135deg, #2d5aa0 0%, #1a4480 100%);
+}
+
+.compare-icon {
+  font-size: 16px;
+}
+
+.compare-text {
+  font-weight: 600;
+}
+
+/* Interface de comparaison déployée */
+.allele-comparison-expanded {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px 20px;
+  border: 1px solid rgba(224, 224, 224, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  animation: expandInterface 0.3s ease-out;
+}
+
+@keyframes expandInterface {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* En-tête de la comparaison */
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(224, 224, 224, 0.3);
+}
+
+.comparison-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.title-icon {
+  font-size: 18px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: rgba(255, 0, 0, 0.1);
+  color: #d32f2f;
+  transform: scale(1.1);
+}
+
+/* Inputs d'allèles */
+.allele-inputs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.allele-input-group {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.allele-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.allele-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.allele-input.has-value {
+  border-color: #4caf50;
+  background: rgba(76, 175, 80, 0.02);
+}
+
+/* Suggestions dropdown */
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-item:hover {
+  background: #f5f5f5;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+/* Divider "vs" */
+.vs-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  border: 2px solid #ddd;
+  flex-shrink: 0;
+}
+
+.allele-selector-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.allele-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.allele-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c3e50;
+  min-width: fit-content;
+}
+
+.allele-dropdown {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+  min-width: 120px;
+  transition: border-color 0.2s ease;
+}
+
+.allele-dropdown:hover {
+  border-color: #4a90e2;
+}
+
+.allele-dropdown:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.vs-text {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  margin: 0 4px;
+}
+
+/* Boutons d'action */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: none;
+}
+
+.action-btn:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.example-btn {
+  color: #4a90e2;
+  border-color: rgba(74, 144, 226, 0.3);
+}
+
+.example-btn:hover {
+  background: rgba(74, 144, 226, 0.05);
+  border-color: #4a90e2;
+}
+
+.reset-btn {
+  color: #666;
+}
+
+.reset-btn:hover {
+  background: rgba(255, 0, 0, 0.05);
+  border-color: rgba(255, 0, 0, 0.3);
+  color: #d32f2f;
+}
+
+/* Résultats compacts */
+.comparison-results-compact {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: rgba(248, 249, 250, 0.8);
+  border: 1px solid rgba(224, 224, 224, 0.4);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.results-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.tutorial-link-small {
+  background: none;
+  border: none;
+  color: #1976d2;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.tutorial-link-small:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+}
+
+.results-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-compact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #2c3e50;
+}
+
+.result-label-compact {
+  color: #666;
+  font-size: 12px;
+}
+
+.result-detail {
+  color: #666;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.result-filtered-highlight {
+  color: #d32f2f;
+  font-weight: 600;
+  font-size: 13px;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background: rgba(211, 47, 47, 0.1);
+  border-radius: 4px;
+  cursor: help;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(211, 47, 47, 0.2);
+}
+
+.result-filtered-highlight:hover {
+  background: rgba(211, 47, 47, 0.15);
+  border-color: rgba(211, 47, 47, 0.4);
+  transform: scale(1.05);
+}
+
+/* Responsive design pour l'interface de comparaison */
+@media (max-width: 768px) {
+  .allele-inputs {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .allele-input-group {
+    min-width: 240px;
+    max-width: 280px;
+  }
+  
+  .vs-divider {
+    transform: rotate(90deg);
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  .allele-comparison-expanded {
+    padding: 12px 16px;
+  }
+  
+  .comparison-title {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 520px) {
+  .allele-input-group {
+    min-width: 200px;
+    max-width: 240px;
+  }
+  
+  .allele-input {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  
+  .suggestion-item {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  .compare-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+  
+  .action-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    height: 28px;
+  }
+  
+  .results-line {
+    gap: 12px;
+    justify-content: center;
+  }
+  
+  .result-compact {
+    font-size: 12px;
+  }
+  
+  .result-label-compact {
+    font-size: 11px;
+  }
+  
+  .result-detail {
+    font-size: 10px;
+  }
+  
+  .result-filtered-highlight {
+    font-size: 12px;
+    padding: 1px 4px;
+    margin-left: 6px;
+  }
+}
+
 /* Style responsive pour la ligne de comparaison */
 @media (max-width: 480px) {
   .allele-comparison-line {
@@ -603,6 +1441,34 @@ svg {
     display: block;
     margin-top: 2px;
     margin-left: 0;
+  }
+  
+  .positions-selector-header {
+    font-size: 12px;
+  }
+  
+  .selector-text {
+    font-size: 11px;
+  }
+  
+  .positions-chips .position-chip {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  
+  .allele-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .allele-dropdown {
+    min-width: 100px;
+    font-size: 11px;
+  }
+  
+  .allele-label {
+    font-size: 12px;
   }
 }
 </style>

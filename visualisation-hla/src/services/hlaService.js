@@ -121,10 +121,9 @@ export class HlaService {
     allele1 = null,
     allele2 = null,
     aCsv,
-    bCsv
+    bCsv,
+    visiblePositions = null
   ) {
-    if (allele1) console.log('allele1:', allele1);
-    if (allele2) console.log('allele2:', allele2);
 
     // Initial filtering by locus and threshold
     const filteredData = data.filter(row =>
@@ -192,7 +191,7 @@ export class HlaService {
       }
     });
 
-    let classicalDivergence = null;
+    let hed = null;
     let specificDivergence = null;
     let alleleSpecificPositions = null;
 
@@ -210,19 +209,23 @@ export class HlaService {
           (sum, mismatch) => sum + (mismatch.granthamScore || 0),
           0
         );
-        classicalDivergence = totalGranthamScore / 181;
+        hed = totalGranthamScore / 181;
 
-        const weightedPositions = Object.keys(positionWeighted);
+        // Utiliser les positions visibles si fournies, sinon utiliser toutes les positions
+        const positionsForCalculation = visiblePositions ? Object.keys(visiblePositions) : Object.keys(positionWeighted);
+        // Convertir toutes les positions en strings pour cohérence
+        const positionsAsStrings = positionsForCalculation.map(pos => String(pos));
         const weightedMismatches = alleleSpecificPositions.mismatches.filter(
-          mismatch => weightedPositions.includes(mismatch.position)
+          mismatch => positionsAsStrings.includes(String(mismatch.position))
         );
 
-        if (weightedPositions.length > 0) {
+
+        if (positionsForCalculation.length > 0) {
           const weightedTotal = weightedMismatches.reduce(
             (sum, mismatch) => sum + (mismatch.granthamScore || 0),
             0
           );
-          specificDivergence = weightedTotal / weightedPositions.length;
+          specificDivergence = weightedTotal / positionsForCalculation.length;
         }
       }
     }
@@ -230,7 +233,7 @@ export class HlaService {
     return {
       positionWeighted,
       alleleSpecificPositions,
-      classicalDivergence,
+      hed,
       specificDivergence,
       filteredData,
       totalStructures

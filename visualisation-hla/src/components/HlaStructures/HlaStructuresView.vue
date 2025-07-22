@@ -448,6 +448,11 @@ const handleExport = () => {
   exportToCSV(data, exportFileName.value)
 }
 
+const openTutorial = () => {
+  localStorage.setItem('tutorialSection', 'section-structures');
+  window.open(window.location.origin + '?openTutorial=true', '_blank');
+}
+
 onMounted(() => {
   loadAllData()
 })
@@ -457,9 +462,27 @@ onMounted(() => {
   <v-container fluid>
     <v-row>
       <v-col cols="12">
-        <div class="d-flex align-center mb-2">
-          <v-icon color="primary" class="mr-2">mdi-molecule</v-icon>
-          <h1 class="text-h5 font-weight-bold mb-0">Structures Database</h1>
+        <div class="d-flex align-center justify-space-between mb-2">
+          <div class="d-flex align-center">
+            <v-icon color="primary" class="mr-2">mdi-molecule</v-icon>
+            <h1 class="text-h5 font-weight-bold mb-0">Structures Database</h1>
+          </div>
+          <v-tooltip bottom>
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon
+                size="small"
+                variant="text"
+                color="primary"
+                @click="openTutorial"
+                class="tutorial-link"
+              >
+                <v-icon size="small">mdi-help</v-icon>
+              </v-btn>
+            </template>
+            Learn about the Structures Database
+          </v-tooltip>
         </div>
         
         <!-- Infobulle explicative -->

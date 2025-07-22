@@ -4,6 +4,27 @@
     <v-card flat class="main-form-card">
       <v-card-text class="pb-2 pt-3">
         
+        <!-- En-tête avec lien tutoriel -->
+        <div class="form-header">
+          <h3 class="form-title">Parameters</h3>
+          <v-tooltip bottom>
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon
+                size="small"
+                variant="text"
+                color="primary"
+                @click="openTutorial"
+                class="tutorial-link"
+              >
+                <v-icon size="small">mdi-help</v-icon>
+              </v-btn>
+            </template>
+            Need help? Check the tutorial
+          </v-tooltip>
+        </div>
+
         <!-- Première ligne : Locus et Type d'interaction -->
         <v-row dense>
           <v-col cols="6">
@@ -65,9 +86,9 @@
           </v-col>
         </v-row>
 
-        <!-- Deuxième ligne : Distance et Pourcentage avec sliders -->
+        <!-- Distance slider -->
         <v-row dense class="mt-3">
-          <v-col cols="6">
+          <v-col cols="12">
             <div class="slider-group">
               <label class="slider-label">Distance (Å): {{ formParams.distance }}</label>
               <v-slider
@@ -92,8 +113,11 @@
               </v-slider>
             </div>
           </v-col>
-          
-          <v-col cols="6">
+        </v-row>
+        
+        <!-- Frequency slider -->
+        <v-row dense class="mt-2">
+          <v-col cols="12">
             <div class="slider-group">
               <label class="slider-label">Frequency (%): {{ formParams.percentage }}</label>
               <v-slider
@@ -123,16 +147,6 @@
         <!-- Boutons d'actions rapides -->
         <v-row dense class="mt-2">
           <v-col cols="8">
-            <v-btn
-              @click="loadExampleAlleles"
-              variant="outlined"
-              size="small"
-              color="primary"
-              class="example-btn"
-            >
-              <v-icon left size="small">mdi-test-tube</v-icon>
-              Compare Example Alleles
-            </v-btn>
           </v-col>
           <v-col cols="4" class="text-right">
             <v-btn
@@ -151,57 +165,6 @@
       </v-card-text>
     </v-card>
 
-    <!-- Section des allèles et filtres -->
-    <v-expansion-panels variant="accordion" class="mt-0 mb-3">
-      <v-expansion-panel>
-        <v-expansion-panel-title>
-          <v-icon class="mr-2">mdi-dna</v-icon>
-          Allele Comparison (Optional)
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <v-row dense>
-            <v-col cols="6">
-              <v-autocomplete
-                :model-value="formParams.allele1"
-                @update:model-value="handleAlleleSelect(1, $event)"
-                @update:search="handleAlleleInput(1, $event)"
-                :items="allelesList"
-                :search="currentInput"
-                label="First allele"
-                placeholder="e.g., A*02:01"
-                density="compact"
-                variant="outlined"
-                clearable
-                hide-details
-                :error="invalidAlleles.allele1"
-                :loading="isLoadingAlleles"
-                :menu-props="{ maxHeight: 200 }"
-                auto-select-first
-              />
-            </v-col>
-            <v-col cols="6">
-              <v-autocomplete
-                :model-value="formParams.allele2"
-                @update:model-value="handleAlleleSelect(2, $event)"
-                @update:search="handleAlleleInput(2, $event)"
-                :items="allelesList"
-                :search="currentInput"
-                label="Second allele"
-                placeholder="e.g., A*02:06"
-                density="compact"
-                variant="outlined"
-                clearable
-                hide-details
-                :error="invalidAlleles.allele2"
-                :loading="isLoadingAlleles"
-                :menu-props="{ maxHeight: 200 }"
-                auto-select-first
-              />
-            </v-col>
-          </v-row>
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
 
     <v-expansion-panels variant="accordion" class="mt-0 mb-3">
       <v-expansion-panel class="advanced-filters-panel">
@@ -215,11 +178,26 @@
             <v-checkbox
               :model-value="formParams.showPolymorphicOnly"
               @update:model-value="updateParam('showPolymorphicOnly', $event)"
-              label="Hide non-polymorphic positions"
+              label="Do not include non-polymorphic positions"
               density="compact"
               hide-details
               class="checkbox-ultra-compact"
-            />
+            >
+              <template #label>
+                <span>Do not include non-polymorphic positions</span>
+                <v-tooltip
+                  activator="parent"
+                  location="top"
+                >
+                  <div style="max-width: 350px; font-size: 0.8em; line-height: 1.3;">
+                    This option excludes non-polymorphic positions from analysis and visualization.
+                    Including non-polymorphic positions dilutes all divergence values equally by increasing 
+                    the denominator, but preserves relative comparisons between allele pairs when the same 
+                    set of positions is used for all comparisons.
+                  </div>
+                </v-tooltip>
+              </template>
+            </v-checkbox>
             
             <v-slide-y-transition>
               <div v-if="formParams.showPolymorphicOnly" class="entropy-section">
@@ -244,81 +222,7 @@
     </v-expansion-panels>
 
     <!-- Section des positions et batch -->
-      <!-- Affichage amélioré des positions filtrées -->
-      <v-card 
-        v-if="filteredPositions && filteredPositions.length > 0" 
-        variant="outlined" 
-        class="positions-card mb-3"
-      >
-        <v-card-title class="py-1 px-3 d-flex align-center">
-          <v-icon class="mr-1" size="x-small">mdi-target</v-icon>
-          <span class="text-caption">Filtered Positions ({{ filteredPositions.length }})</span>
-          <v-spacer></v-spacer>
-          <span class="text-caption selection-count">{{ selectedPositions.length }} selected</span>
-        </v-card-title>
-        
-        <v-card-text class="pt-1 pb-2 px-3">
-          <div class="positions-chips">
-            <v-chip
-              v-for="position in displayedPositions"
-              :key="position"
-              :color="selectedPositions.includes(position) ? 'primary' : 'default'"
-              :variant="selectedPositions.includes(position) ? 'elevated' : 'outlined'"
-              size="x-small"
-              class="position-chip-compact"
-              @click="togglePosition(position)"
-              :title="`Click to ${selectedPositions.includes(position) ? 'deselect' : 'select'} position ${position}`"
-            >
-              {{ position }}
-            </v-chip>
-          </div>
-          
-          <!-- Bouton "Voir plus" si beaucoup de positions -->
-          <div v-if="filteredPositions.length > maxDisplayedPositions" class="text-center mt-1">
-            <v-btn
-              v-if="!showAllPositions"
-              @click="showAllPositions = true"
-              variant="text"
-              size="x-small"
-              color="primary"
-              class="text-caption"
-            >
-              Show {{ filteredPositions.length - maxDisplayedPositions }} more positions
-              <v-icon right size="x-small">mdi-chevron-down</v-icon>
-            </v-btn>
-            <v-btn
-              v-else
-              @click="showAllPositions = false"
-              variant="text"
-              size="x-small"
-              color="primary"
-              class="text-caption"
-            >
-              Show less
-              <v-icon right size="x-small">mdi-chevron-up</v-icon>
-            </v-btn>
-          </div>
-        </v-card-text>
-      </v-card>
       
-      <!-- Bouton Batch Analysis amélioré avec tooltip -->
-      <v-tooltip bottom>
-        <template #activator="{ props }">
-          <v-btn
-            v-bind="props"
-            @click="openBatchAnalysis"
-            :disabled="loading"
-            color="secondary"
-            variant="elevated"
-            block
-            class="batch-btn"
-          >
-            <v-icon left>mdi-play-circle</v-icon>
-            Run Batch Analysis
-          </v-btn>
-        </template>
-        <span>Analyze multiple alleles in parallel with current parameters</span>
-      </v-tooltip>
   </div>
   </div>
 </template>
@@ -352,149 +256,26 @@ export default {
     selectedPositions: {  
       type: Array,
       default: () => []
-    }
+    },
   },
   data() {
     return {
       showSuggestions: null,
       currentInput: '',
-      allelesList: [],
-      isLoadingAlleles: true,
-      invalidAlleles: {
-        allele1: false,
-        allele2: false
-      },
-      showAllPositions: false,
-      maxDisplayedPositions: 20
-    }
-  },
-  watch: {
-    'formParams.locus': {
-      immediate: true,
-      async handler(newLocus) {
-        await this.loadAlleles(newLocus);
-      }
-    },
-    'formParams.allele1'(newValue) {
-      this.validateAllele('allele1', newValue);
-    },
-    'formParams.allele2'(newValue) {
-      this.validateAllele('allele2', newValue);
-    },
-    filteredPositions() {
-      // Reset "show all" when positions change for better UX
-      this.showAllPositions = false;
     }
   },
   methods: {
-    async loadAlleles(locus) {
-      try {
-        this.isLoadingAlleles = true;
-        // Utiliser le bon nom de fichier
-        const response = await fetch(`/data/Alleles${locus}.txt`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const text = await response.text();
-        
-        // Vérifier si on a reçu du HTML (erreur 404 etc.)
-        if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-          throw new Error('Received HTML instead of alleles data');
-        }
-        
-        this.allelesList = text.split('\n')
-          .map(line => line.trim())
-          .filter(line => line && !line.startsWith('#') && line.includes('*'));
-        
-        console.log(`Loaded ${this.allelesList.length} alleles for locus ${locus}`);
-        
-        // Revalider les allèles après chargement de la nouvelle liste
-        this.validateAllele('allele1', this.formParams.allele1);
-        this.validateAllele('allele2', this.formParams.allele2);
-      } catch (error) {
-        console.error(`Erreur lors du chargement des allèles ${locus}:`, error);
-        this.allelesList = [];
-      } finally {
-        this.isLoadingAlleles = false;
-      }
-    },
-    validateAllele(alleleField, value) {
-      if (!value || value.trim() === '') {
-        this.invalidAlleles[alleleField] = false;
-        return;
-      }
-      
-      // Attendre que les allèles soient chargés avant de valider
-      if (this.isLoadingAlleles || this.allelesList.length === 0) {
-        this.invalidAlleles[alleleField] = false;
-        return;
-      }
-      
-      this.invalidAlleles[alleleField] = !this.allelesList.includes(value);
-    },
-    togglePosition(position) {
-      // Émettre l'événement vers le parent pour qu'il gère la sélection
-      this.$emit('position-clicked', position);
-    },
     updateParam(key, value) {
-      if (key === 'locus') {
-        this.updateParam('allele1', '');
-        this.updateParam('allele2', '');
-        this.invalidAlleles.allele1 = false;
-        this.invalidAlleles.allele2 = false;
-      }
       this.$emit('update:formParams', {
         ...this.formParams,
         [key]: value
       });
     },
-    handleAlleleInput(inputNumber, value) {
-      this.currentInput = value || '';
-      // Ne pas mettre à jour le param ici pour éviter la validation prématurée
-    },
-    handleAlleleSelect(inputNumber, value) {
-      this.updateParam(`allele${inputNumber}`, value || '');
-      this.currentInput = '';
-    },
-    selectAllele(inputNumber, allele) {
-      this.updateParam(`allele${inputNumber}`, allele);
-      this.currentInput = '';
-      // La validation se fera automatiquement via le watcher
-    },
-    openBatchAnalysis() {
-      const currentParams = {
-        locus: this.formParams.locus,
-        distance: this.formParams.distance,
-        percentage: this.formParams.percentage,
-        interactionType: this.formParams.interactionType
-      };
-      this.$emit('open-batch-analysis', currentParams);
-    },
-    loadExampleAlleles() {
-      // Définir les allèles d'exemple selon le locus
-      const exampleAlleles = {
-        A: ['A*02:01', 'A*03:01'],
-        B: ['B*07:02', 'B*08:01']
-      };
-      
-      const examples = exampleAlleles[this.formParams.locus];
-      this.updateParam('allele1', examples[0]);
-      this.updateParam('allele2', examples[1]);
-      
-      // Ouvrir automatiquement le panel de comparaison d'allèles
-      // On peut pas directement manipuler v-expansion-panels, donc on utilise un petit hack
-      this.$nextTick(() => {
-        const expansionPanels = this.$el.querySelector('.v-expansion-panels');
-        if (expansionPanels) {
-          const allelePanel = expansionPanels.querySelectorAll('.v-expansion-panel')[0]; // Premier panel = Allele Comparison
-          if (allelePanel && !allelePanel.classList.contains('v-expansion-panel--active')) {
-            const button = allelePanel.querySelector('.v-expansion-panel-title');
-            if (button) button.click();
-          }
-        }
-      });
+    openTutorial() {
+      // Stocker la section de destination dans le localStorage
+      localStorage.setItem('tutorialSection', 'section-parameters');
+      // Ouvrir dans un nouvel onglet
+      window.open(window.location.origin + '?openTutorial=true', '_blank');
     },
     resetToDefaults() {
       // Reset vers les valeurs par défaut
@@ -513,34 +294,6 @@ export default {
       Object.keys(defaultParams).forEach(key => {
         this.updateParam(key, defaultParams[key]);
       });
-      
-      // Reset des états internes
-      this.invalidAlleles.allele1 = false;
-      this.invalidAlleles.allele2 = false;
-      this.showAllPositions = false;
-    }
-  },
-  computed: {
-    filteredAlleles() {
-      if (this.isLoadingAlleles) return [];
-      
-      // Toujours montrer les premiers allèles par défaut
-      if (!this.currentInput || this.currentInput.trim() === '') {
-        return this.allelesList.slice(0, 15);
-      }
-      
-      const input = this.currentInput.toLowerCase();
-      const filtered = this.allelesList
-        .filter(allele => allele.toLowerCase().includes(input))
-        .slice(0, 15);
-        
-      return filtered;
-    },
-    displayedPositions() {
-      if (this.showAllPositions || this.filteredPositions.length <= this.maxDisplayedPositions) {
-        return this.filteredPositions;
-      }
-      return this.filteredPositions.slice(0, this.maxDisplayedPositions);
     }
   }
 }
@@ -572,6 +325,31 @@ export default {
 .main-form-card {
   background-color: transparent !important;
   box-shadow: none !important;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(224, 224, 224, 0.3);
+}
+
+.form-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.tutorial-link {
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.tutorial-link:hover {
+  opacity: 1;
 }
 
 .slider-group {

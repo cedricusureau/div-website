@@ -11,7 +11,7 @@ export class BatchProcessor {
           'Pair2', 
           'HED', 
           'Targeted Divergence',
-          'Normalized HED (0-1)',
+          'HED_Normalized',
           'Normalized Targeted Divergence (0-1)',
           'Locus',
           'Distance Threshold (Å)',
@@ -22,7 +22,7 @@ export class BatchProcessor {
       ];
   
       const weightedPositions = Object.keys(positions);
-      let maxClassicalDivergence = 0;
+      let maxHed = 0;
       let maxSpecificDivergence = 0;
       
       // First pass to find maximum values
@@ -37,16 +37,16 @@ export class BatchProcessor {
           allele1, allele2, aCsv, bCsv, locus
         );
   
-        let classicalDivergence = 0;
+        let hed = 0;
         let specificDivergence = 0;
   
         if (alleleSpecificPositions && alleleSpecificPositions.mismatches) {
-          // Calculate Classical Divergence
+          // Calculate HED
           const totalGranthamScore = alleleSpecificPositions.mismatches.reduce(
             (sum, mismatch) => sum + (mismatch.granthamScore || 0),
             0
           );
-          classicalDivergence = totalGranthamScore / 181;
+          hed = totalGranthamScore / 181;
   
           // Calculate Specific Divergence using weighted positions
           const weightedMismatches = alleleSpecificPositions.mismatches.filter(
@@ -62,30 +62,30 @@ export class BatchProcessor {
           }
         }
   
-        maxClassicalDivergence = Math.max(maxClassicalDivergence, classicalDivergence);
+        maxHed = Math.max(maxHed, hed);
         maxSpecificDivergence = Math.max(maxSpecificDivergence, specificDivergence);
   
         preliminaryResults.push({
           allele1,
           allele2,
-          classicalDivergence,
+          hed,
           specificDivergence
         });
       }
   
       // Second pass to create normalized results
       for (const result of preliminaryResults) {
-        const normalizedClassical = maxClassicalDivergence > 0 ? 
-          result.classicalDivergence / maxClassicalDivergence : 0;
+        const normalizedHed = maxHed > 0 ? 
+          result.hed / maxHed : 0;
         const normalizedSpecific = maxSpecificDivergence > 0 ? 
           result.specificDivergence / maxSpecificDivergence : 0;
   
         results.push([
           result.allele1,
           result.allele2,
-          result.classicalDivergence.toFixed(2),
+          result.hed.toFixed(2),
           result.specificDivergence.toFixed(2),
-          normalizedClassical.toFixed(3),
+          normalizedHed.toFixed(3),
           normalizedSpecific.toFixed(3),
           analysisParams.locus,
           analysisParams.distance,

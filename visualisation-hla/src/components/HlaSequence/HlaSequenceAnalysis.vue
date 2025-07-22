@@ -19,28 +19,73 @@
             :filteredPositions="Object.keys(positions)"
             :selectedPositions="selectedPositions"
             @update:formParams="wrappedUpdateParams"
-            @open-batch-analysis="handleBatchAnalysis"
             @position-clicked="handlePositionClickFromForm"
           />
         </v-col>
         
-        <!-- Colonne visualisation (droite sur grands écrans) -->
+        <!-- Colonne contenu avec onglets -->
         <v-col 
           cols="12" 
           lg="8" 
           xl="9"
-          class="visualization-column"
+          class="content-column"
         >
-          <SequenceVisualization
-            :positions="positions"
-            :total-positions="Object.keys(positions).length"  
-            :allele-specific-positions-result="alleleSpecificPositionsResult"
-            :classical-divergence="classicalDivergence"
-            :specific-divergence="specificDivergence"
-            :filtered-contact-data="filteredContactDataByPositions"
-            :selectedPositions="selectedPositions"
-            @positions-selected="handlePositionSelection"
-          />
+          <!-- Onglets stylisés -->
+          <div class="tabs-container">
+            <div class="tabs-header">
+              <button 
+                :class="['tab-button', { active: currentTab === 'exploration' }]"
+                @click="switchTab('exploration')"
+              >
+                <span class="tab-icon">🔍</span>
+                <span class="tab-text">Exploration</span>
+              </button>
+              <button 
+                :class="['tab-button', { active: currentTab === 'batch' }]"
+                @click="switchTab('batch')"
+              >
+                <span class="tab-icon">📊</span>
+                <span class="tab-text">Batch Calculation</span>
+              </button>
+              <div class="tab-indicator" :class="{ 'batch-active': currentTab === 'batch' }"></div>
+            </div>
+            
+            <!-- Contenu des onglets -->
+            <div class="tabs-content">
+              <div class="content-wrapper" :class="`slide-${currentTab}`">
+                <!-- Mode Exploration -->
+                <div class="content-panel exploration-panel">
+                  <SequenceVisualization
+                    :positions="positions"
+                    :total-positions="Object.keys(positions).length"  
+                    :allele-specific-positions-result="alleleSpecificPositionsResult"
+                    :hed="hed"
+                    :specific-divergence="specificDivergence"
+                    :filtered-contact-data="filteredContactDataByPositions"
+                    :selectedPositions="selectedPositions"
+                    :current-locus="formParams.locus"
+                    @positions-selected="handlePositionSelection"
+                    @allele-changed="handleAlleleChanged"
+                  />
+                </div>
+                
+                <!-- Mode Batch -->
+                <div class="content-panel batch-panel">
+                  <BatchAnalysis
+                    :analysis-params="{
+                      locus: formParams.locus,
+                      distance: formParams.distance,
+                      percentage: formParams.percentage,
+                      interactionType: formParams.interactionType,
+                      positions: positions,
+                      aCsv: aCsvData,
+                      bCsv: bCsvData
+                    }"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </v-col>
       </v-row>
     </div>
@@ -52,15 +97,16 @@ import { onMounted, ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useHlaAnalysis } from './composables/useHlaAnalysis';
 import HlaAnalysisForm from './components/HlaAnalysisForm.vue';
 import SequenceVisualization from './components/SequenceVisualization.vue';
+import BatchAnalysis from './components/BatchAnalysis.vue';
 
 export default {
   name: 'HlaSequence',
   components: {
     HlaAnalysisForm,
     SequenceVisualization,
+    BatchAnalysis,
   },
-  emits: ['switch-to-batch'],
-  setup(props, { emit }) {
+  setup() {
     const {
       loading,
       error,
@@ -72,7 +118,7 @@ export default {
       aCsvData,
       bCsvData,
       alleleSpecificPositionsResult,
-      classicalDivergence,
+      hed,
       specificDivergence,
       filteredContactData,
       totalStructure,
@@ -81,6 +127,9 @@ export default {
 
     // État pour suivre les positions sélectionnées
     const selectedPositions = ref([]);
+    
+    // État pour l'onglet actuel
+    const currentTab = ref('exploration');
     
     // Pour la mise à jour automatique avec debounce
     const debouncedCalculation = ref(null);
@@ -124,23 +173,9 @@ export default {
       selectedPositions.value = selectedPositions.value.filter(pos => pos in newPositions);
     });
 
-    // Gestion du batch analysis
-    const handleBatchAnalysis = async () => {
-      console.log('Starting batch analysis');
-      await calculatePositions();
-     
-      const batchData = {
-        locus: formParams.locus,
-        distance: formParams.distance,
-        percentage: formParams.percentage,
-        interactionType: formParams.interactionType,
-        positions: Object.assign({}, positions.value),
-        aCsv: aCsvData.value,
-        bCsv: bCsvData.value    
-      };
-      
-      console.log('Emitting batch data:', batchData);
-      emit('switch-to-batch', batchData);
+    // Gestion du changement d'onglet
+    const switchTab = (tab) => {
+      currentTab.value = tab;
     };
 
     // Gestionnaire pour la sélection de positions depuis la frise
@@ -165,6 +200,14 @@ export default {
       }
     };
 
+    // Gestionnaire pour le changement d'allèles depuis la visualisation
+    const handleAlleleChanged = (alleles) => {
+      wrappedUpdateParams({
+        allele1: alleles.allele1,
+        allele2: alleles.allele2
+      });
+    };
+
     onMounted(() => {
       initializeData();
     });
@@ -186,14 +229,16 @@ export default {
       aCsvData,
       bCsvData,
       alleleSpecificPositionsResult,
-      classicalDivergence,
+      hed,
       specificDivergence,
       filteredContactDataByPositions,
       handlePositionSelection,
-      handlePositionClickFromForm, // AJOUT : Nouvelle méthode
+      handlePositionClickFromForm,
+      handleAlleleChanged,
       totalStructure,
       selectedPositions,
-      handleBatchAnalysis,
+      currentTab,
+      switchTab,
       rawPositions
     };
   }
@@ -248,7 +293,7 @@ export default {
   overflow-y: auto;
 }
 
-.visualization-column {
+.content-column {
   padding: 1rem;
   min-height: calc(100vh - 120px);
 }
@@ -262,15 +307,168 @@ export default {
     padding: 0.5rem;
   }
   
-  .visualization-column {
+  .content-column {
     padding: 0.5rem;
     min-height: auto;
   }
 }
 
 @media (max-width: 768px) {
-  .visualization-column {
+  .content-column {
     padding: 0.25rem;
+  }
+}
+
+/* Styles pour les onglets */
+.tabs-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs-header {
+  position: relative;
+  display: flex;
+  background: white;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
+  z-index: 10;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 16px 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 2;
+}
+
+.tab-button:first-child {
+  border-radius: 12px 0 0 0;
+}
+
+.tab-button:last-child {
+  border-radius: 0 12px 0 0;
+}
+
+.tab-button.active {
+  color: #2c3e50;
+  background: rgba(74, 144, 226, 0.05);
+}
+
+.tab-button:hover:not(.active) {
+  color: #4a90e2;
+  background: rgba(74, 144, 226, 0.02);
+}
+
+.tab-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.tab-button.active .tab-icon {
+  transform: scale(1.1);
+}
+
+.tab-text {
+  font-weight: 600;
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  height: 3px;
+  background: linear-gradient(90deg, #4a90e2, #2d5aa0);
+  border-radius: 3px 3px 0 0;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 3;
+}
+
+.tab-indicator.batch-active {
+  transform: translateX(100%);
+}
+
+.tabs-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.content-wrapper {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-wrapper.slide-exploration {
+  transform: translateX(0);
+}
+
+.content-wrapper.slide-batch {
+  transform: translateX(-50%);
+}
+
+.content-panel {
+  width: 50%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.exploration-panel {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.batch-panel {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Animations d'entrée pour le contenu */
+.content-panel {
+  opacity: 1;
+  transition: opacity 0.3s ease 0.2s;
+}
+
+.content-wrapper.slide-exploration .batch-panel,
+.content-wrapper.slide-batch .exploration-panel {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .tab-button {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .tab-text {
+    display: none;
+  }
+  
+  .tab-icon {
+    font-size: 20px;
+  }
+  
+  .content-panel {
+    padding: 12px;
   }
 }
 </style>

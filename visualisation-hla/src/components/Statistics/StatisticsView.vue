@@ -270,6 +270,11 @@ watch(
   }
 );
 
+const openTutorial = () => {
+  localStorage.setItem('tutorialSection', 'section-interface');
+  window.open(window.location.origin + '?openTutorial=true', '_blank');
+}
+
 onMounted(() => {
   loadAllData()
 })
@@ -279,12 +284,30 @@ onMounted(() => {
   <v-container fluid>
     <v-row>
       <v-col cols="12">
-        <div class="d-flex align-center mb-6">
-          <v-icon size="large" color="primary" class="mr-3">mdi-chart-pie</v-icon>
-          <div>
-            <h1 class="text-h4 font-weight-bold">Database Statistics</h1>
-            <p class="text-subtitle-1 text-grey-darken-1 mb-0">Visual analysis of HLA structure distributions</p>
+        <div class="d-flex align-center justify-space-between mb-6">
+          <div class="d-flex align-center">
+            <v-icon size="large" color="primary" class="mr-3">mdi-chart-pie</v-icon>
+            <div>
+              <h1 class="text-h4 font-weight-bold">Database Statistics</h1>
+              <p class="text-subtitle-1 text-grey-darken-1 mb-0">Visual analysis of HLA structure distributions</p>
+            </div>
           </div>
+          <v-tooltip bottom>
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon
+                size="small"
+                variant="text"
+                color="primary"
+                @click="openTutorial"
+                class="tutorial-link"
+              >
+                <v-icon size="small">mdi-help</v-icon>
+              </v-btn>
+            </template>
+            Learn about database statistics
+          </v-tooltip>
         </div>
         
         <!-- Infobulle explicative -->

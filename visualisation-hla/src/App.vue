@@ -22,8 +22,8 @@
         hide-slider
       >
         <v-tab value="sequence" class="nav-tab">
-          <v-icon left small class="mr-2">mdi-dna</v-icon>
-          Sequence Analysis
+          <v-icon left small class="mr-2">mdi-calculator-variant</v-icon>
+          Divergence Calculation
         </v-tab>
         <v-tab value="structures" class="nav-tab">
           <v-icon left small class="mr-2">mdi-molecule</v-icon>
@@ -32,6 +32,10 @@
         <v-tab value="statistics" class="nav-tab">
           <v-icon left small class="mr-2">mdi-chart-pie</v-icon>
           Statistics
+        </v-tab>
+        <v-tab value="tutorial" class="nav-tab">
+          <v-icon left small class="mr-2">mdi-school</v-icon>
+          Tutorial
         </v-tab>
       </v-tabs>
     </v-app-bar>
@@ -44,6 +48,7 @@
         />
         <HlaStructuresView v-if="currentView === 'structures'" />
         <StatisticsView v-if="currentView === 'statistics'" />
+        <TutorialView v-if="currentView === 'tutorial'" />
         <BatchAnalysis 
           v-if="currentView === 'batch'"
           :analysisParams="batchParams"
@@ -59,6 +64,7 @@ import { ref } from 'vue'
 import HlaSequence from './components/HlaSequence/HlaSequenceAnalysis.vue'
 import HlaStructuresView from './components/HlaStructures/HlaStructuresView.vue'
 import StatisticsView from './components/Statistics/StatisticsView.vue'
+import TutorialView from './components/Tutorial/TutorialView.vue'
 import BatchAnalysis from './components/HlaSequence/components/BatchAnalysis.vue'
 
 export default {
@@ -67,6 +73,7 @@ export default {
     HlaSequence,
     HlaStructuresView,
     StatisticsView,
+    TutorialView,
     BatchAnalysis
   },
   setup() {
@@ -77,6 +84,14 @@ export default {
     batchParams.value = {...data};  // Make a shallow copy
     currentView.value = 'batch';
   };
+
+  // Vérifier si on doit ouvrir le tutoriel automatiquement
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('openTutorial') === 'true') {
+    currentView.value = 'tutorial';
+    // Nettoyer l'URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 
   return {
     currentView,

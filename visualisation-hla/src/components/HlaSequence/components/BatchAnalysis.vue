@@ -1,116 +1,91 @@
 <template>
     <v-container fluid class="batch-analysis">
-      <div class="header-section">
-        <h2 class="text-h4 mb-4">Batch Analysis</h2>
-        <v-btn @click="$emit('back-to-sequence')" color="primary" variant="outlined">
-          <v-icon left>mdi-arrow-left</v-icon>
-          Return to Sequence Analysis
-        </v-btn>
+      <div class="header-section d-flex align-center justify-space-between mb-4">
+        <h2 class="text-h4 mb-0">Batch Analysis</h2>
+        <v-tooltip bottom>
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon
+              size="small"
+              variant="text"
+              color="primary"
+              @click="openTutorial"
+              class="tutorial-link"
+            >
+              <v-icon size="small">mdi-help</v-icon>
+            </v-btn>
+          </template>
+          Learn about batch analysis
+        </v-tooltip>
       </div>
   
-      <!-- Layout en colonnes pour optimiser l'espace -->
-      <v-row no-gutters class="mb-4">
-        <!-- Colonne gauche: Paramètres et positions -->
-        <v-col cols="12" lg="6" class="pr-lg-2">
-          <!-- Section des paramètres actifs avec badges -->
-          <v-card class="mb-4 params-card compact-card" elevation="2">
-            <v-card-title class="text-subtitle-1 bg-primary text-white py-2">
-              <v-icon left size="small">mdi-cog</v-icon>
-              Active Parameters
-            </v-card-title>
-            <v-card-text class="py-2">
-              <div class="param-badges">
-                <v-chip color="primary" variant="elevated" size="small" class="mr-1 mb-1">
-                  <v-icon left size="x-small">mdi-dna</v-icon>
-                  HLA-{{ analysisParams.locus }}
-                </v-chip>
-                <v-chip color="success" variant="elevated" size="small" class="mr-1 mb-1">
-                  <v-icon left size="x-small">mdi-ruler</v-icon>
-                  {{ analysisParams.distance }}Å
-                </v-chip>
-                <v-chip color="info" variant="elevated" size="small" class="mr-1 mb-1">
-                  <v-icon left size="x-small">mdi-percent</v-icon>
-                  {{ analysisParams.percentage }}%
-                </v-chip>
-                <v-chip color="secondary" variant="elevated" size="small" class="mr-1 mb-1">
-                  <v-icon left size="x-small">mdi-connection</v-icon>
-                  {{ analysisParams.interactionType }}
-                </v-chip>
-                <v-chip color="orange" variant="elevated" size="small" class="mr-1 mb-1">
-                  <v-icon left size="x-small">mdi-filter</v-icon>
-                  {{ totalPositions }} positions
-                </v-chip>
-              </div>
-            </v-card-text>
-          </v-card>
-
-          <!-- Sélecteur de positions interactif -->
-          <v-card class="positions-card compact-card" elevation="2">
-            <v-card-title class="text-subtitle-1 py-2">
-              <v-icon left size="small">mdi-target</v-icon>
-              Select Positions
-              <v-spacer></v-spacer>
-              <v-chip 
+      <!-- Sélection des positions en menu déroulant compact -->
+      <v-expansion-panels variant="accordion" class="mb-3">
+        <v-expansion-panel>
+          <v-expansion-panel-title class="py-2">
+            <v-icon class="mr-2" size="small">mdi-target</v-icon>
+            <span class="text-body-2">Select positions used for batch divergence calculation</span>
+            <v-spacer></v-spacer>
+            <v-chip size="x-small" color="primary" variant="outlined" class="mr-2">
+              {{ selectedPositionsCount }} / {{ totalPositions }} selected
+            </v-chip>
+          </v-expansion-panel-title>
+          <v-expansion-panel-text>
+            <div class="positions-actions mb-2">
+              <v-btn 
                 size="x-small" 
                 color="primary" 
-                variant="outlined"
+                variant="outlined" 
+                @click="selectAllPositions"
+                :disabled="selectedPositionsCount === totalPositions"
               >
-                {{ selectedPositionsCount }} / {{ totalPositions }}
+                Select All
+              </v-btn>
+              <v-btn 
+                size="x-small" 
+                color="secondary" 
+                variant="outlined" 
+                @click="clearAllPositions"
+                :disabled="selectedPositionsCount === 0"
+                class="ml-2"
+              >
+                Clear All
+              </v-btn>
+              <span class="text-caption ml-4 text-grey">
+                Uncheck positions to exclude them from divergence calculations
+              </span>
+            </div>
+            
+            <div class="positions-chips">
+              <v-chip
+                v-for="position in availablePositions"
+                :key="position"
+                :color="selectedPositions.includes(position) ? 'primary' : 'default'"
+                :variant="selectedPositions.includes(position) ? 'elevated' : 'outlined'"
+                size="x-small"
+                class="ma-1 position-chip"
+                @click="togglePosition(position)"
+                clickable
+              >
+                {{ position }}
               </v-chip>
-            </v-card-title>
-            <v-card-text class="py-2">
-              <div class="positions-actions mb-2">
-                <v-btn 
-                  size="x-small" 
-                  color="primary" 
-                  variant="outlined" 
-                  @click="selectAllPositions"
-                  :disabled="selectedPositionsCount === totalPositions"
-                >
-                  All
-                </v-btn>
-                <v-btn 
-                  size="x-small" 
-                  color="secondary" 
-                  variant="outlined" 
-                  @click="clearAllPositions"
-                  :disabled="selectedPositionsCount === 0"
-                  class="ml-1"
-                >
-                  Clear
-                </v-btn>
-              </div>
-              
-              <div class="positions-chips">
-                <v-chip
-                  v-for="position in availablePositions"
-                  :key="position"
-                  :color="selectedPositions.includes(position) ? 'primary' : 'default'"
-                  :variant="selectedPositions.includes(position) ? 'elevated' : 'outlined'"
-                  size="x-small"
-                  class="ma-1 position-chip"
-                  @click="togglePosition(position)"
-                  clickable
-                >
-                  {{ position }}
-                </v-chip>
-              </div>
-              
-              <v-alert 
-                v-if="selectedPositionsCount === 0"
-                type="warning" 
-                variant="tonal" 
-                density="compact"
-                class="mt-2"
-              >
-                Select at least one position
-              </v-alert>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        
-        <!-- Colonne droite: Saisie HLA -->
-        <v-col cols="12" lg="6" class="pl-lg-2">
+            </div>
+            
+            <v-alert 
+              v-if="selectedPositionsCount === 0"
+              type="warning" 
+              variant="tonal" 
+              density="compact"
+              class="mt-2"
+            >
+              Select at least one position for analysis
+            </v-alert>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
+
+      <!-- Section HLA Pairs Input - pleine largeur -->
           <!-- Section de saisie des paires HLA -->
           <v-card class="compact-card" elevation="2">
             <v-card-title class="text-subtitle-1 py-2">
@@ -156,7 +131,7 @@
                 v-model="hlaInput"
                 label="HLA Pairs"
                 placeholder="Enter your HLA pairs here..."
-                rows="4"
+                rows="8"
                 variant="outlined"
                 density="compact"
                 hide-details
@@ -201,8 +176,6 @@
               </div>
             </v-card-text>
           </v-card>
-        </v-col>
-      </v-row>
     </v-container>
   </template>
   
@@ -217,7 +190,6 @@ import { BatchProcessor } from '@/services/batchProcessor';
         required: true
       }
     },
-    emits: ['back-to-sequence'],
     data() {
       return {
         hlaInput: '',
@@ -254,6 +226,10 @@ import { BatchProcessor } from '@/services/batchProcessor';
       this.selectedPositions = [...this.availablePositions];
     },
     methods: {
+      openTutorial() {
+        localStorage.setItem('tutorialSection', 'section-csv-results');
+        window.open(window.location.origin + '?openTutorial=true', '_blank');
+      },
       togglePosition(position) {
         const index = this.selectedPositions.indexOf(position);
         if (index !== -1) {

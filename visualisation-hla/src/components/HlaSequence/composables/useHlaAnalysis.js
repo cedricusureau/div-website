@@ -11,7 +11,7 @@ export function useHlaAnalysis() {
   const alleleSpecificPositionsResult = ref(null);
   const loading = ref(false);
   const error = ref(null);
-  const classicalDivergence = ref(null);
+  const hed = ref(null);
   const specificDivergence = ref(null);
   const filteredContactData = ref([]);
   const totalStructure = ref(null);
@@ -94,7 +94,8 @@ export function useHlaAnalysis() {
         formParams.allele1,
         formParams.allele2,
         aCsvData.value,
-        bCsvData.value
+        bCsvData.value,
+        filteredPositions.value
       );
 
       // Stocker toutes les positions non filtrées
@@ -118,7 +119,7 @@ export function useHlaAnalysis() {
       }
       
       // Update divergence values
-      classicalDivergence.value = result.classicalDivergence;
+      hed.value = result.hed;
       specificDivergence.value = result.specificDivergence;
    
     } catch (err) {
@@ -130,7 +131,7 @@ export function useHlaAnalysis() {
       positions.value = {};
       filteredContactData.value = null;
       alleleSpecificPositionsResult.value = null;
-      classicalDivergence.value = null;
+      hed.value = null;
       specificDivergence.value = null;
     }
   }
@@ -146,7 +147,7 @@ export function useHlaAnalysis() {
     aCsvData,
     bCsvData,
     alleleSpecificPositionsResult,
-    classicalDivergence,
+    hed,
     specificDivergence,
     filteredContactData,    
     totalStructure,
