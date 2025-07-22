@@ -56,8 +56,9 @@
               </p>
               
               <p class="tutorial-text">
-                Unlike HED which considers all 181 positions (Exon 2-3) of the HLA sequence, targeted divergence focuses exclusively 
-                on positions involved in direct molecular contacts with peptides and/or T-cell receptors.
+                Unlike the classical HLA Evolutionary Divergence (HED), which sums differences across all 181 positions in the peptide-binding domains, 
+                our targeted divergence calculates divergence only for positions directly involved in contact with peptides or TCRs. 
+                Targeted divergence therefore emphasises these biologically important sites.
               </p>
             </div>
 
@@ -298,8 +299,8 @@
               <h3 class="subsection-title">📊 Understanding Divergence Metrics</h3>
               
               <div class="metric-explanation">
-                <h4>HED (HLA Evolutionary Distance)</h4>
-                <p>HLA Evolutionary Distance calculated across all 181 positions of the HLA sequence.</p>
+                <h4>HED (HLA Evolutionary Divergence)</h4>
+                <p>HLA Evolutionary Divergence calculated across all 181 positions of the HLA sequence.</p>
                 <div class="formula">
                   <code>HED = Σ(Grantham Scores) / 181</code>
                 </div>
@@ -314,10 +315,11 @@
               </div>
 
               <v-alert type="success" variant="tonal" class="my-4">
-                <strong>Interpretation:</strong>
+                <strong>Interpreting Divergence Scores:</strong>
                 <ul class="mt-2">
-                  <li>Higher values indicate greater evolutionary distance between alleles</li>
-                  <li>Targeted divergence focuses on functionally relevant positions</li>
+                  <li>Higher values indicate greater evolutionary divergence between alleles</li>
+                  <li>Because classical HED and targeted divergence use different denominators, you should normalise both scores on a 0–1 scale before comparing them</li>
+                  <li>A high normalised targeted divergence highlights large differences at functionally relevant positions</li>
                   <li>Compare values within the same parameter set for meaningful results</li>
                 </ul>
               </v-alert>
@@ -495,7 +497,9 @@
 
               <div class="feature-group">
                 <h4>Sankey Diagram</h4>
-                <p>The Sankey diagram provides detailed visualization of interaction patterns between HLA positions and their molecular partners:</p>
+                <p>The Sankey diagram provides detailed visualization of interaction patterns between HLA positions and their molecular partners. 
+                Crystal structures show that the peptide accounts for roughly 12–49% of the contact surface, while TCR α and β chains contribute about half each. 
+                Exploring TCR contacts helps explain differences in immune recognition beyond peptide binding:</p>
                 
                 <div class="sankey-explanation">
                   <h5>🎨 Color Coding in the SVG Timeline</h5>
@@ -693,14 +697,14 @@ export default {
 
 <style scoped>
 .tutorial-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
 }
 
 .tutorial-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .tutorial-title {
@@ -740,46 +744,46 @@ export default {
 }
 
 .tutorial-content {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .tutorial-section {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   scroll-margin-top: 150px;
 }
 
 .tutorial-card {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
 }
 
 .section-title {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: #2c3e50;
 }
 
 .tutorial-text {
-  font-size: 1.1rem;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  line-height: 1.5;
   color: #444;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
 }
 
 .subsection-title {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #2c3e50;
-  margin: 1.5rem 0 1rem 0;
+  margin: 1.2rem 0 0.8rem 0;
 }
 
 .interface-section {
-  margin: 2rem 0;
-  padding: 1.5rem;
-  background: rgba(74, 144, 226, 0.05);
-  border-radius: 8px;
-  border-left: 4px solid #4a90e2;
+  margin: 1.5rem 0;
+  padding: 1.2rem;
+  background: rgba(74, 144, 226, 0.04);
+  border-radius: 6px;
+  border-left: 3px solid #4a90e2;
 }
 
 .feature-list {
@@ -923,24 +927,24 @@ export default {
 .concept-section,
 .database-section,
 .percentage-section {
-  margin: 2rem 0;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border-left: 4px solid;
+  margin: 1.5rem 0;
+  padding: 1.2rem;
+  border-radius: 6px;
+  border-left: 3px solid;
 }
 
 .concept-section {
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.05) 0%, rgba(74, 144, 226, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.04) 0%, rgba(74, 144, 226, 0.08) 100%);
   border-left-color: #4a90e2;
 }
 
 .database-section {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.04) 0%, rgba(76, 175, 80, 0.08) 100%);
   border-left-color: #4caf50;
 }
 
 .percentage-section {
-  background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, rgba(255, 152, 0, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.04) 0%, rgba(255, 152, 0, 0.08) 100%);
   border-left-color: #ff9800;
 }
 
