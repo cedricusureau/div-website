@@ -69,7 +69,7 @@ This is a Vue 3 application for HLA (Human Leukocyte Antigen) sequence analysis 
 - Parallel CSV loading for performance
 - Complex position analysis based on peptide/TCR interactions
 - Allele-specific sequence comparison with Grantham scoring
-- HED (HLA Evolutionary Distance) calculations
+- HED (HLA Evolutionary Divergence) calculations
 - Key methods: `getPatchPosition()`, `calculateAlleleSpecificPositions()`
 
 **entropyService.js** (`src/services/entropyService.js`):
