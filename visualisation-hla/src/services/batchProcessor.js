@@ -3,9 +3,13 @@ import { getGranthamScore } from './granthamScores';
 
 export class BatchProcessor {
     static async processBatch(pairs, aCsv, bCsv, positions = {}, analysisParams) {
+      const result = await this.processBatchWithVisualization(pairs, aCsv, bCsv, positions, analysisParams);
+      return result.csvContent;
+    }
 
+    static async processBatchWithVisualization(pairs, aCsv, bCsv, positions = {}, analysisParams) {
       // Prepare CSV headers
-      const results = [
+      const csvResults = [
         [
           'Pair1', 
           'Pair2', 
@@ -73,14 +77,17 @@ export class BatchProcessor {
         });
       }
   
-      // Second pass to create normalized results
+      // Second pass to create normalized results and visualization data
+      const visualizationData = [];
+      
       for (const result of preliminaryResults) {
         const normalizedHed = maxHed > 0 ? 
           result.hed / maxHed : 0;
         const normalizedSpecific = maxSpecificDivergence > 0 ? 
           result.specificDivergence / maxSpecificDivergence : 0;
   
-        results.push([
+        // Add to CSV results
+        csvResults.push([
           result.allele1,
           result.allele2,
           result.hed.toFixed(2),
@@ -93,9 +100,27 @@ export class BatchProcessor {
           analysisParams.interactionType,
           weightedPositions.join(', ')
         ]);
+
+        // Add to visualization data
+        visualizationData.push({
+          pair1: result.allele1,
+          pair2: result.allele2,
+          hed: result.hed,
+          targetedDivergence: result.specificDivergence,
+          normalizedHed: normalizedHed,
+          normalizedTargetedDivergence: normalizedSpecific,
+          pairLabel: `${result.allele1} vs ${result.allele2}`
+        });
       }
 
-      return this.generateCsv(results); // Add return statement here
+      return {
+        csvContent: this.generateCsv(csvResults),
+        visualizationData: visualizationData,
+        maxValues: {
+          maxHed,
+          maxSpecificDivergence
+        }
+      };
     }
 
     static generateCsv(rows) {

@@ -139,3 +139,6 @@ This is a Vue 3 application for HLA (Human Leukocyte Antigen) sequence analysis 
 - Debounced user input (300ms) for real-time analysis
 - Computed properties for reactive filtering
 - Lazy loading of heavy data visualizations
+
+###TODO
+- Faire une page d'accueil 

@@ -38,7 +38,8 @@ export default {
       default: 0
     }
   },
-  setup(props) {
+  emits: ['position-clicked'],
+  setup(props, { emit }) {
     const sankeyChart = ref(null);
     const loading = ref(true);
     const validRows = ref([]);
@@ -47,6 +48,9 @@ export default {
     const maxRenderAttempts = 5;
     const resizeObserver = ref(null);
     let cleanup = null;
+    
+    // UNE SEULE VARIABLE FIXE pour le nombre total de structures du dataset
+    const TOTAL_DATASET_STRUCTURES = computed(() => props.totalStructures || 239);
     
     // Fonction pour trouver les lignes valides
     const findValidRows = () => {
@@ -275,8 +279,9 @@ export default {
         peptideNodes.add(peptideNode);
       });
       
-      // Utiliser le nombre total de structures fourni en prop s'il est disponible
-      const totalStructuresCount = props.totalStructures > 0 ? props.totalStructures : structuresSet.size;
+      // UTILISER LA VARIABLE UNIQUE FIXE
+      const totalDatasetStructures = TOTAL_DATASET_STRUCTURES.value;
+      const totalStructuresCount = structuresSet.size; // pour la mise à l'échelle visuelle
       
       // Fonctions pour extraire les numéros des positions
       const extractMhcNumber = (name) => {
@@ -358,8 +363,8 @@ export default {
         const [source, target] = key.split('-');
         const structureCount = structures.size;
         
-        // Calculer le pourcentage basé sur le nombre total de structures
-        const percentage = (structureCount / totalStructuresCount) * 100;
+        // Calculer le pourcentage basé sur le nombre total de structures du dataset (239)
+        const percentage = (structureCount / totalDatasetStructures) * 100;
         
         return {
           source: nodeMap[source],
@@ -398,7 +403,7 @@ export default {
         if (structures.size >= MIN_STRUCTURES_THRESHOLD && nodeMap[mhcResidue] !== undefined) {
           const sourceIndex = nodeMap[mhcResidue];
           const structureCount = structures.size;
-          const percentage = (structureCount / totalStructuresCount) * 100;
+          const percentage = (structureCount / totalDatasetStructures) * 100;
           
           links.push({
             source: sourceIndex,
@@ -419,7 +424,7 @@ export default {
         if (structures.size >= MIN_STRUCTURES_THRESHOLD && nodeMap[mhcResidue] !== undefined) {
           const sourceIndex = nodeMap[mhcResidue];
           const structureCount = structures.size;
-          const percentage = (structureCount / totalStructuresCount) * 100;
+          const percentage = (structureCount / totalDatasetStructures) * 100;
           
           links.push({
             source: sourceIndex,
@@ -440,7 +445,8 @@ export default {
         links, 
         maxStructureCount, 
         maxInteractionCount, 
-        totalStructures: totalStructuresCount 
+        totalStructures: totalStructuresCount,
+        totalDatasetStructures: totalDatasetStructures
       };
     };
 
@@ -482,7 +488,7 @@ export default {
         .attr('preserveAspectRatio', 'xMinYMin meet');
       
       // Configuration de Sankey avec des marges
-      const margin = { top: 40, right: 40, bottom: 20, left: 60 };
+      const margin = { top: 45, right: 40, bottom: 20, left: 60 };
       const innerWidth = width - margin.left - margin.right;
       const innerHeight = height - margin.top - margin.bottom;
       
@@ -535,15 +541,26 @@ export default {
           links: JSON.parse(JSON.stringify(data.links))
         });
         
-        // Ajouter le titre du diagramme
+        // UTILISER LA VARIABLE UNIQUE FIXE
+        const totalDatasetStructures = TOTAL_DATASET_STRUCTURES.value;
+        
+        const interactingStructuresSet = new Set();
+        validRows.value.forEach(row => {
+          const structureId = row.Structure || row.PDB_ID || row.complex_id || `structure_${row.ResidueID}`;
+          interactingStructuresSet.add(structureId);
+        });
+        const interactingStructuresCount = interactingStructuresSet.size;
+        
+        // Titre simplifié avec pourcentage
+        const interactionPercentage = ((interactingStructuresCount / totalDatasetStructures) * 100).toFixed(1);
         svg.append('text')
           .attr('x', width / 2)
-          .attr('y', 20)
+          .attr('y', 25)
           .attr('text-anchor', 'middle')
           .attr('font-size', '14px')
           .attr('font-weight', 'bold')
           .attr('fill', '#333')
-          .text('Interactions MHC-Peptide-TCR');
+          .text(`Selected positions: ${interactingStructuresCount}/${totalDatasetStructures} (${interactionPercentage}%)`);
         
         // Ajouter des labels pour les côtés
         svg.append('text')
@@ -598,10 +615,10 @@ export default {
               </div>
               <div style="display:flex;justify-content:space-between;margin-bottom:2px">
                 <span>Structures:</span>
-                <span style="font-weight:600">${d.structureCount}</span>
+                <span style="font-weight:600">${d.structureCount}/${totalDatasetStructures}</span>
               </div>
               <div style="display:flex;justify-content:space-between">
-                <span>Pourcentage:</span>
+                <span>Percentage:</span>
                 <span style="font-weight:600;color:${d.isTcrLink ? 
                   (d.target.name === 'TCRA' ? '#9333ea' : '#c026d3') : 
                   colorScale(d.structureRatio)}">${d.percentage}%</span>
@@ -653,6 +670,13 @@ export default {
           })
           .attr('stroke', '#333')
           .style('cursor', 'pointer')
+          .on('click', function(event, d) {
+            // Gérer le clic seulement sur les nœuds MHC
+            if (d.name.startsWith('MHC_')) {
+              const positionNumber = d.name.replace('MHC_', '');
+              emit('position-clicked', positionNumber);
+            }
+          })
           .on('mouseover', function(event, d) {
             d3.select(this)
               .attr('fill', d => {

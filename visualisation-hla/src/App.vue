@@ -178,4 +178,60 @@ export default {
     min-width: 100px;
   }
 }
+
+/* ========== CURSEURS PERSONNALISÉS ANTICORPS ========== */
+
+/* Curseur anticorps par défaut sur toute l'application */
+* {
+  cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fcGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%232d5aa0;stop-opacity:1" /><stop offset="100%" style="stop-color:%231e3f73;stop-opacity:1" /></linearGradient><linearGradient id="fabGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%236fa8f5;stop-opacity:1" /><stop offset="100%" style="stop-color:%234a90e2;stop-opacity:1" /></linearGradient></defs><g transform="rotate(-15 12 12)"><rect x="10.25" y="8" width="3.5" height="14" rx="1.75" fill="url(%23fcGradient)"/><path d="M12 8 L6 2" stroke="url(%23fabGradient)" stroke-width="2.5" stroke-linecap="round"/><path d="M12 8 L18 2" stroke="url(%23fabGradient)" stroke-width="2.5" stroke-linecap="round"/><circle cx="6" cy="2" r="1.8" fill="url(%23fabGradient)"/><circle cx="18" cy="2" r="1.8" fill="url(%23fabGradient)"/><circle cx="12" cy="8" r="1.3" fill="url(%23fcGradient)"/></g></svg>') 12 12, auto !important;
+}
+
+/* Curseur anticorps interactif pour les éléments cliquables */
+button, 
+a, 
+.v-btn, 
+.v-tab, 
+.clickable,
+[role="button"],
+.position-point,
+.position-chip,
+.tab-button,
+.v-icon {
+  cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fcActive" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%232d5aa0;stop-opacity:1" /><stop offset="100%" style="stop-color:%231e3f73;stop-opacity:1" /></linearGradient><linearGradient id="fabActive" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%23ff4757;stop-opacity:1" /><stop offset="100%" style="stop-color:%23c44569;stop-opacity:1" /></linearGradient><filter id="bindingGlow"><feGaussianBlur stdDeviation="1.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g transform="rotate(-15 12 12)"><rect x="10.25" y="8" width="3.5" height="14" rx="1.75" fill="url(%23fcActive)"/><path d="M12 8 L6 2" stroke="url(%23fabActive)" stroke-width="2.8" stroke-linecap="round" filter="url(%23bindingGlow)"/><path d="M12 8 L18 2" stroke="url(%23fabActive)" stroke-width="2.8" stroke-linecap="round" filter="url(%23bindingGlow)"/><circle cx="6" cy="2" r="2" fill="url(%23fabActive)" filter="url(%23bindingGlow)"/><circle cx="18" cy="2" r="2" fill="url(%23fabActive)" filter="url(%23bindingGlow)"/><circle cx="12" cy="8" r="1.3" fill="url(%23fcActive)"/></g></svg>') 12 12, pointer !important;
+}
+
+/* Conserver les curseurs appropriés pour l'UX */
+input, 
+textarea, 
+.v-text-field input, 
+.v-textarea textarea,
+[contenteditable="true"] {
+  cursor: text !important;
+}
+
+/* Curseur de redimensionnement pour les éléments appropriés */
+.v-resizer {
+  cursor: col-resize !important;
+}
+
+/* Curseur de déplacement pour les éléments draggables */
+[draggable="true"] {
+  cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fcDrag" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%232d5aa0;stop-opacity:1" /><stop offset="100%" style="stop-color:%231e3f73;stop-opacity:1" /></linearGradient><linearGradient id="fabDrag" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%23ff4757;stop-opacity:1" /><stop offset="100%" style="stop-color:%23c44569;stop-opacity:1" /></linearGradient></defs><g transform="rotate(-15 12 12)"><rect x="10.25" y="8" width="3.5" height="14" rx="1.75" fill="url(%23fcDrag)"/><path d="M12 8 L6 2" stroke="url(%23fabDrag)" stroke-width="2.8" stroke-linecap="round"/><path d="M12 8 L18 2" stroke="url(%23fabDrag)" stroke-width="2.8" stroke-linecap="round"/><circle cx="6" cy="2" r="2" fill="url(%23fabDrag)"/><circle cx="18" cy="2" r="2" fill="url(%23fabDrag)"/><circle cx="12" cy="8" r="1.3" fill="url(%23fcDrag)"/></g></svg>') 12 12, move !important;
+}
+
+/* Curseur par défaut pour les éléments non-interactifs spécifiques */
+.v-card-text,
+.v-list-item-content,
+p, span, div.text {
+  cursor: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fcText" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%232d5aa0;stop-opacity:1" /><stop offset="100%" style="stop-color:%231e3f73;stop-opacity:1" /></linearGradient><linearGradient id="fabText" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%236fa8f5;stop-opacity:1" /><stop offset="100%" style="stop-color:%234a90e2;stop-opacity:1" /></linearGradient></defs><g transform="rotate(-15 12 12)"><rect x="10.25" y="8" width="3.5" height="14" rx="1.75" fill="url(%23fcText)"/><path d="M12 8 L6 2" stroke="url(%23fabText)" stroke-width="2.5" stroke-linecap="round"/><path d="M12 8 L18 2" stroke="url(%23fabText)" stroke-width="2.5" stroke-linecap="round"/><circle cx="6" cy="2" r="1.8" fill="url(%23fabText)"/><circle cx="18" cy="2" r="1.8" fill="url(%23fabText)"/><circle cx="12" cy="8" r="1.3" fill="url(%23fcText)"/></g></svg>') 12 12, auto !important;
+}
+
+/* Animation subtile au hover pour renforcer l'effet */
+button:hover, 
+a:hover, 
+.v-btn:hover, 
+.v-tab:hover {
+  transition: transform 0.1s ease;
+  transform: scale(1.02);
+}
 </style>

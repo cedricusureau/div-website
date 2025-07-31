@@ -16,8 +16,8 @@
           <HlaAnalysisForm
             :formParams="formParams"
             :loading="loading"
-            :filteredPositions="Object.keys(positions)"
-            :selectedPositions="selectedPositions"
+            :filteredPositions="filteredPositionsKeys"
+            :selectedPositions="explorationSelectedPositions"
             @update:formParams="wrappedUpdateParams"
             @position-clicked="handlePositionClickFromForm"
           />
@@ -50,39 +50,40 @@
               <div class="tab-indicator" :class="{ 'batch-active': currentTab === 'batch' }"></div>
             </div>
             
-            <!-- Contenu des onglets -->
+            <!-- Contenu des onglets optimisé avec v-show -->
             <div class="tabs-content">
-              <div class="content-wrapper" :class="`slide-${currentTab}`">
-                <!-- Mode Exploration -->
-                <div class="content-panel exploration-panel">
-                  <SequenceVisualization
-                    :positions="positions"
-                    :total-positions="Object.keys(positions).length"  
-                    :allele-specific-positions-result="alleleSpecificPositionsResult"
-                    :hed="hed"
-                    :specific-divergence="specificDivergence"
-                    :filtered-contact-data="filteredContactDataByPositions"
-                    :selectedPositions="selectedPositions"
-                    :current-locus="formParams.locus"
-                    @positions-selected="handlePositionSelection"
-                    @allele-changed="handleAlleleChanged"
-                  />
-                </div>
-                
-                <!-- Mode Batch -->
-                <div class="content-panel batch-panel">
-                  <BatchAnalysis
-                    :analysis-params="{
-                      locus: formParams.locus,
-                      distance: formParams.distance,
-                      percentage: formParams.percentage,
-                      interactionType: formParams.interactionType,
-                      positions: positions,
-                      aCsv: aCsvData,
-                      bCsv: bCsvData
-                    }"
-                  />
-                </div>
+              <!-- Mode Exploration -->
+              <div 
+                v-show="currentTab === 'exploration'" 
+                class="content-panel exploration-panel"
+                :class="{ 'panel-active': currentTab === 'exploration' }"
+              >
+                <SequenceVisualization
+                  :positions="positions"
+                  :total-positions="filteredPositionsKeys.length"  
+                  :allele-specific-positions-result="alleleSpecificPositionsResult"
+                  :hed="hed"
+                  :specific-divergence="specificDivergence"
+                  :filtered-contact-data="filteredContactDataByPositions"
+                  :selectedPositions="explorationSelectedPositions"
+                  :current-locus="formParams.locus"
+                  :totalStructure="totalStructure"
+                  @positions-selected="handleExplorationPositionSelection"
+                  @allele-changed="handleAlleleChanged"
+                />
+              </div>
+              
+              <!-- Mode Batch -->
+              <div 
+                v-show="currentTab === 'batch'" 
+                class="content-panel batch-panel"
+                :class="{ 'panel-active': currentTab === 'batch' }"
+              >
+                <BatchAnalysis
+                  :analysis-params="analysisParamsComputed"
+                  :initial-selected-positions="batchSelectedPositions"
+                  @positions-selected="handleBatchPositionSelection"
+                />
               </div>
             </div>
           </div>
@@ -125,8 +126,9 @@ export default {
       rawPositions
     } = useHlaAnalysis();
 
-    // État pour suivre les positions sélectionnées
-    const selectedPositions = ref([]);
+    // États séparés pour les positions sélectionnées selon le mode
+    const explorationSelectedPositions = ref([]);
+    const batchSelectedPositions = ref([]);
     
     // État pour l'onglet actuel
     const currentTab = ref('exploration');
@@ -134,69 +136,155 @@ export default {
     // Pour la mise à jour automatique avec debounce
     const debouncedCalculation = ref(null);
 
-    // Fonction wrapper qui réinitialise les positions sélectionnées
+    // Fonction wrapper qui réinitialise les positions sélectionnées selon le mode
     const wrappedUpdateParams = (newParams) => {
-      // Réinitialiser les positions sélectionnées à chaque mise à jour du formulaire
-      selectedPositions.value = [];
+      // En mode exploration, réinitialiser les positions sélectionnées
+      if (currentTab.value === 'exploration') {
+        explorationSelectedPositions.value = [];
+      }
+      // En mode batch, on garde les positions sélectionnées actuelles
       
       // Appeler la fonction originale
       originalUpdateParams(newParams);
     };
 
-    // Surveiller les changements de formParams pour mise à jour automatique
-    watch(formParams, () => {
-      // Annuler tout calcul précédent en attente
-      if (debouncedCalculation.value) {
-        clearTimeout(debouncedCalculation.value);
+    // Watchers optimisés séparés par type de paramètre
+    
+    // Watcher pour les paramètres qui nécessitent un recalcul complet (debounced)
+    watch(
+      () => [formParams.locus, formParams.distance, formParams.percentage, formParams.interactionType],
+      () => {
+        // Annuler tout calcul précédent en attente
+        if (debouncedCalculation.value) {
+          clearTimeout(debouncedCalculation.value);
+        }
+        
+        // Définir un nouveau timeout pour le calcul (400ms pour les opérations lourdes)
+        debouncedCalculation.value = setTimeout(() => {
+          calculatePositions();
+          debouncedCalculation.value = null;
+        }, 400);
       }
-      
-      // Définir un nouveau timeout pour le calcul (300ms)
-      debouncedCalculation.value = setTimeout(() => {
-        calculatePositions();
-        debouncedCalculation.value = null;
-      }, 300);
-    }, { deep: true });
+    );
+    
+    // Watcher pour les paramètres qui ne nécessitent qu'une mise à jour du filtrage (plus rapide)
+    watch(
+      () => [formParams.showPolymorphicOnly, formParams.entropyThreshold],
+      () => {
+        // Mise à jour immédiate du filtrage sans debounce
+        originalUpdateParams(formParams);
+      }
+    );
+    
+    // Watcher pour les allèles (recalcul rapide)
+    watch(
+      () => [formParams.allele1, formParams.allele2],
+      () => {
+        if (debouncedCalculation.value) {
+          clearTimeout(debouncedCalculation.value);
+        }
+        
+        // Timeout plus court pour les allèles (200ms)
+        debouncedCalculation.value = setTimeout(() => {
+          calculatePositions();
+          debouncedCalculation.value = null;
+        }, 200);
+      }
+    );
 
-    // Computed property pour filtrer les données en fonction des positions sélectionnées
+    // Computed properties optimisées
+    const filteredPositionsKeys = computed(() => Object.keys(positions.value));
+    
+    // Sets pour les comparaisons O(1) au lieu de Array.includes O(n)
+    const explorationSelectedPositionsSet = computed(() => new Set(explorationSelectedPositions.value));
+    const batchSelectedPositionsSet = computed(() => new Set(batchSelectedPositions.value));
+    
+    const analysisParamsComputed = computed(() => ({
+      locus: formParams.locus,
+      distance: formParams.distance,
+      percentage: formParams.percentage,
+      interactionType: formParams.interactionType,
+      positions: positions.value,
+      aCsv: aCsvData.value,
+      bCsv: bCsvData.value
+    }));
+
+    // Computed property pour les positions actuellement sélectionnées selon le mode
+    const currentSelectedPositions = computed(() => {
+      return currentTab.value === 'exploration' 
+        ? explorationSelectedPositions.value 
+        : batchSelectedPositions.value;
+    });
+    
+    // Set pour les positions actuellement sélectionnées (pour optimiser les comparaisons)
+    const currentSelectedPositionsSet = computed(() => {
+      return currentTab.value === 'exploration' 
+        ? explorationSelectedPositionsSet.value 
+        : batchSelectedPositionsSet.value;
+    });
+
+    // Computed property pour filtrer les données en fonction des positions sélectionnées (optimisé avec Set)
     const filteredContactDataByPositions = computed(() => {
-      if (selectedPositions.value.length === 0) {
+      if (currentSelectedPositions.value.length === 0) {
         return filteredContactData.value;
       }
+      const selectedSet = currentSelectedPositionsSet.value;
       return filteredContactData.value.filter(contact =>
-        selectedPositions.value.includes(String(contact.ResidueID))
+        selectedSet.has(String(contact.ResidueID))
       );
     });
 
-    // Surveiller les changements de positions pour réinitialiser les positions sélectionnées
-    // si elles n'existent plus après filtrage
+    // Surveiller les changements de positions pour mettre à jour les positions sélectionnées (optimisé)
     watch(positions, (newPositions) => {
-      selectedPositions.value = selectedPositions.value.filter(pos => pos in newPositions);
+      const availablePositions = Object.keys(newPositions);
+      const availableSet = new Set(availablePositions);
+      
+      // Mettre à jour les positions d'exploration (filtrer celles qui n'existent plus)
+      explorationSelectedPositions.value = explorationSelectedPositions.value.filter(pos => availableSet.has(pos));
+      
+      // Pour le mode batch, toujours sélectionner TOUTES les positions disponibles
+      // C'est le comportement attendu : le batch sélectionne tout par défaut
+      if (availablePositions.length > 0) {
+        batchSelectedPositions.value = [...availablePositions];
+      } else {
+        batchSelectedPositions.value = [];
+      }
     });
 
     // Gestion du changement d'onglet
     const switchTab = (tab) => {
       currentTab.value = tab;
-    };
-
-    // Gestionnaire pour la sélection de positions depuis la frise
-    const handlePositionSelection = (positions) => {
-      selectedPositions.value = positions;
-    };
-
-    // AJOUT : Gestionnaire pour la sélection de positions depuis le formulaire
-    const handlePositionClickFromForm = (position) => {
-      // Utiliser la même logique que dans SequenceVisualization
-      const positionStr = String(position);
-      const index = selectedPositions.value.indexOf(positionStr);
       
-      if (index !== -1) {
+      // Si on passe en mode batch et qu'aucune position n'est sélectionnée, sélectionner toutes
+      if (tab === 'batch' && batchSelectedPositions.value.length === 0 && filteredPositionsKeys.value.length > 0) {
+        batchSelectedPositions.value = [...filteredPositionsKeys.value];
+      }
+    };
+
+    // Gestionnaire pour la sélection de positions depuis la frise (mode exploration)
+    const handleExplorationPositionSelection = (positions) => {
+      explorationSelectedPositions.value = positions;
+    };
+
+    // Gestionnaire pour la sélection de positions depuis le batch
+    const handleBatchPositionSelection = (positions) => {
+      batchSelectedPositions.value = positions;
+    };
+
+    // Gestionnaire pour la sélection de positions depuis le formulaire (mode exploration uniquement) - optimisé
+    const handlePositionClickFromForm = (position) => {
+      // Cette fonction ne s'applique qu'en mode exploration
+      if (currentTab.value !== 'exploration') return;
+      
+      const positionStr = String(position);
+      const currentSet = explorationSelectedPositionsSet.value;
+      
+      if (currentSet.has(positionStr)) {
         // Position déjà sélectionnée, la retirer
-        const newSelection = [...selectedPositions.value];
-        newSelection.splice(index, 1);
-        selectedPositions.value = newSelection;
+        explorationSelectedPositions.value = explorationSelectedPositions.value.filter(pos => pos !== positionStr);
       } else {
         // Position non sélectionnée, l'ajouter
-        selectedPositions.value = [...selectedPositions.value, positionStr];
+        explorationSelectedPositions.value = [...explorationSelectedPositions.value, positionStr];
       }
     };
 
@@ -232,11 +320,16 @@ export default {
       hed,
       specificDivergence,
       filteredContactDataByPositions,
-      handlePositionSelection,
+      filteredPositionsKeys,
+      analysisParamsComputed,
+      handleExplorationPositionSelection,
+      handleBatchPositionSelection,
       handlePositionClickFromForm,
       handleAlleleChanged,
       totalStructure,
-      selectedPositions,
+      explorationSelectedPositions,
+      batchSelectedPositions,
+      currentSelectedPositions,
       currentTab,
       switchTab,
       rawPositions
@@ -404,32 +497,29 @@ export default {
 .tabs-content {
   flex: 1;
   position: relative;
-  overflow: hidden;
   background: #f8f9fa;
   border-radius: 0 0 12px 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.content-wrapper {
-  display: flex;
-  width: 200%;
-  height: 100%;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.content-wrapper.slide-exploration {
-  transform: translateX(0);
-}
-
-.content-wrapper.slide-batch {
-  transform: translateX(-50%);
-}
-
 .content-panel {
-  width: 50%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   padding: 20px;
   overflow-y: auto;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.content-panel.panel-active {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .exploration-panel {
@@ -438,18 +528,6 @@ export default {
 
 .batch-panel {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-/* Animations d'entrée pour le contenu */
-.content-panel {
-  opacity: 1;
-  transition: opacity 0.3s ease 0.2s;
-}
-
-.content-wrapper.slide-exploration .batch-panel,
-.content-wrapper.slide-batch .exploration-panel {
-  opacity: 0.3;
-  pointer-events: none;
 }
 
 /* Mobile responsive */

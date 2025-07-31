@@ -176,18 +176,32 @@
               </div>
             </v-card-text>
           </v-card>
+
+      <!-- Scatter Plot Visualization -->
+      <ScatterPlot 
+        v-if="visualizationData.length > 0"
+        :visualization-data="visualizationData"
+      />
     </v-container>
   </template>
   
   <script>
 import { BatchProcessor } from '@/services/batchProcessor';
+import ScatterPlot from './ScatterPlot.vue';
 
   export default {
     name: 'BatchAnalysis',
+    components: {
+      ScatterPlot
+    },
     props: {
       analysisParams: {
         type: Object,
         required: true
+      },
+      initialSelectedPositions: {
+        type: Array,
+        default: () => []
       }
     },
     data() {
@@ -196,7 +210,8 @@ import { BatchProcessor } from '@/services/batchProcessor';
         invalidPairs: [],
         selectedPositions: [],
         isAnalyzing: false,
-        showInstructions: false
+        showInstructions: false,
+        visualizationData: []
       }
     },
     computed: {
@@ -222,8 +237,12 @@ import { BatchProcessor } from '@/services/batchProcessor';
       }
     },
     mounted() {
-      // Par défaut, sélectionner toutes les positions disponibles
-      this.selectedPositions = [...this.availablePositions];
+      // Utiliser les positions sélectionnées du parent, ou toutes par défaut
+      if (this.initialSelectedPositions.length > 0) {
+        this.selectedPositions = [...this.initialSelectedPositions];
+      } else {
+        this.selectedPositions = [...this.availablePositions];
+      }
     },
     methods: {
       openTutorial() {
@@ -237,12 +256,16 @@ import { BatchProcessor } from '@/services/batchProcessor';
         } else {
           this.selectedPositions.push(position);
         }
+        // Émettre vers le parent
+        this.$emit('positions-selected', [...this.selectedPositions]);
       },
       selectAllPositions() {
         this.selectedPositions = [...this.availablePositions];
+        this.$emit('positions-selected', [...this.selectedPositions]);
       },
       clearAllPositions() {
         this.selectedPositions = [];
+        this.$emit('positions-selected', [...this.selectedPositions]);
       },
       loadExamplePairs() {
         // Définir des exemples selon le locus
@@ -252,14 +275,24 @@ import { BatchProcessor } from '@/services/batchProcessor';
             'A*01:01 A*03:01',
             'A*02:01 A*11:01',
             'A*24:02 A*32:01',
-            'A*01:01 A*02:01'
+            'A*01:01 A*02:01',
+            'A*03:01 A*24:02',
+            'A*11:01 A*32:01',
+            'A*02:06 A*03:01',
+            'A*68:01 A*68:02',
+            'A*32:01 A*01:01'
           ],
           B: [
             'B*07:02 B*08:01',
             'B*27:05 B*44:02',
             'B*15:01 B*35:01',
             'B*13:02 B*40:01',
-            'B*07:02 B*27:05'
+            'B*07:02 B*27:05',
+            'B*08:01 B*15:01',
+            'B*44:02 B*13:02',
+            'B*35:01 B*07:02',
+            'B*40:01 B*27:05',
+            'B*15:01 B*44:02'
           ]
         };
         
@@ -292,7 +325,7 @@ import { BatchProcessor } from '@/services/batchProcessor';
             return obj;
           }, {});
 
-          const csvContent = await BatchProcessor.processBatch(
+          const result = await BatchProcessor.processBatchWithVisualization(
             validPairs,
             this.analysisParams.aCsv,
             this.analysisParams.bCsv,
@@ -305,13 +338,16 @@ import { BatchProcessor } from '@/services/batchProcessor';
             }
           );
 
-          if (!csvContent) {
+          if (!result || !result.csvContent) {
             console.error('No CSV content generated');
             return;
           }
 
+          // Store visualization data
+          this.visualizationData = result.visualizationData || [];
+
           // Create and trigger download of CSV file
-          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const blob = new Blob([result.csvContent], { type: 'text/csv;charset=utf-8;' });
           const link = document.createElement('a');
           link.href = URL.createObjectURL(blob);
           link.setAttribute('download', `hla_batch_analysis_${this.selectedPositions.length}pos_${Date.now()}.csv`);
@@ -326,6 +362,14 @@ import { BatchProcessor } from '@/services/batchProcessor';
       }
     },
     watch: {
+      initialSelectedPositions: {
+        immediate: true,
+        handler(newSelectedPositions) {
+          if (newSelectedPositions && newSelectedPositions.length > 0) {
+            this.selectedPositions = [...newSelectedPositions];
+          }
+        }
+      },
       availablePositions: {
         immediate: true,
         handler(newPositions) {

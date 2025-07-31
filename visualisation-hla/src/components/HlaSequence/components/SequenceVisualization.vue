@@ -239,10 +239,11 @@
           <div class="action-buttons">
             <button 
               @click="loadExampleAlleles"
-              class="action-btn example-btn"
+              class="action-btn example-btn cycling"
               :disabled="isLoadingAlleles"
-              title="Load example alleles"
+              title="Cliquer pour faire défiler les exemples (5 paires par locus)"
             >
+              <span class="example-icon">⟲</span>
               Example
             </button>
             <button 
@@ -333,6 +334,7 @@
             :filteredContactData="filteredContactData"
             :selectedPositions="selectedPositionsForSankey"
             :totalStructures="totalStructure"
+            @position-clicked="handleClick"
           />
         </div>
       </transition>
@@ -398,6 +400,8 @@ export default {
       allelesList: [],
       isLoadingAlleles: false,
       showAlleleComparison: false,
+      // Index pour la rotation des exemples
+      exampleIndex: 0,
       allele1Input: '',
       allele2Input: '',
       showSuggestions1: false,
@@ -619,18 +623,37 @@ export default {
     loadExampleAlleles() {
       const currentLocus = this.currentLocus || 'A';
       
+      // Ensemble de 5 paires d'exemples par locus pour la rotation
       const exampleAlleles = {
-        A: ['A*02:01', 'A*03:01'],
-        B: ['B*07:02', 'B*08:01']
+        A: [
+          ['A*02:01', 'A*03:01'],
+          ['A*68:01', 'A*68:02'], 
+          ['A*02:01', 'A*11:01'],
+          ['A*24:02', 'A*32:01'],
+          ['A*01:01', 'A*02:01']
+        ],
+        B: [
+          ['B*07:02', 'B*08:01'],
+          ['B*27:05', 'B*44:02'],
+          ['B*15:01', 'B*35:01'],
+          ['B*13:02', 'B*40:01'],
+          ['B*07:02', 'B*27:05']
+        ]
       };
       
-      const examples = exampleAlleles[currentLocus] || exampleAlleles.A;
+      const examplePairs = exampleAlleles[currentLocus] || exampleAlleles.A;
       
-      this.currentAllele1 = examples[0];
-      this.currentAllele2 = examples[1];
-      this.allele1Input = examples[0];
-      this.allele2Input = examples[1];
+      // Utiliser l'index pour sélectionner la paire actuelle et boucler
+      const currentPair = examplePairs[this.exampleIndex % examplePairs.length];
+      
+      this.currentAllele1 = currentPair[0];
+      this.currentAllele2 = currentPair[1];
+      this.allele1Input = currentPair[0];
+      this.allele2Input = currentPair[1];
       this.showAlleleComparison = true; // Déployer l'interface
+      
+      // Incrémenter l'index pour le prochain clic
+      this.exampleIndex++;
       
       this.$emit('allele-changed', {
         allele1: this.currentAllele1,
@@ -1249,11 +1272,68 @@ svg {
 .example-btn {
   color: #4a90e2;
   border-color: rgba(74, 144, 226, 0.3);
+  position: relative;
+  overflow: visible;
 }
 
 .example-btn:hover {
   background: rgba(74, 144, 226, 0.05);
   border-color: #4a90e2;
+}
+
+/* Icône de cycle avec animation */
+.example-icon {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+/* Animation de rotation continue pour indiquer le cycle */
+.example-btn.cycling .example-icon {
+  animation: rotate-hint 2s linear infinite;
+}
+
+.example-btn:hover .example-icon {
+  transform: rotate(180deg);
+  animation-play-state: paused;
+}
+
+/* Effet de pulsation circulaire pour attirer l'attention */
+.example-btn.cycling::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid rgba(74, 144, 226, 0.4);
+  border-radius: 8px;
+  animation: pulse-circle 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes rotate-hint {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-circle {
+  0% { 
+    border-color: rgba(74, 144, 226, 0.4);
+    transform: scale(1);
+  }
+  50% { 
+    border-color: rgba(74, 144, 226, 0.8);
+    transform: scale(1.05);
+  }
+  100% { 
+    border-color: rgba(74, 144, 226, 0.4);
+    transform: scale(1);
+  }
 }
 
 .reset-btn {

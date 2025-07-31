@@ -1,24 +1,27 @@
-import { ref, reactive, computed } from 'vue';
+import { ref, shallowRef, reactive, computed } from 'vue';
 import { HlaService } from '@/services/hlaService';
 import { EntropyService } from '@/services/entropyService';
 
 export function useHlaAnalysis() {
-  const csvData = ref([]);
-  const aCsvData = ref([]);
-  const bCsvData = ref([]);
-  const positions = ref({});
-  const rawPositions = ref({}); // Stocke toutes les positions avant filtrage
+  // Utiliser shallowRef pour les grandes structures de données qui ne changent pas souvent
+  const csvData = shallowRef([]);
+  const aCsvData = shallowRef([]);
+  const bCsvData = shallowRef([]);
+  const positions = shallowRef({});
+  const rawPositions = shallowRef({}); // Stocke toutes les positions avant filtrage
+  const filteredContactData = shallowRef([]);
+  const entropyData = shallowRef({
+    A: {},
+    B: {}
+  });
+  
+  // Utiliser ref normal pour les valeurs primitives ou les objets qui changent souvent
   const alleleSpecificPositionsResult = ref(null);
   const loading = ref(false);
   const error = ref(null);
   const hed = ref(null);
   const specificDivergence = ref(null);
-  const filteredContactData = ref([]);
   const totalStructure = ref(null);
-  const entropyData = ref({
-    A: {},
-    B: {}
-  });
  
   // État de formulaire local
   const formParams = reactive({
@@ -107,9 +110,8 @@ export function useHlaAnalysis() {
       // Store the new detailed data
       filteredContactData.value = result.filteredData;
 
-      // Important : mettre à jour totalStructure avant de l'utiliser
-      const uniqueStructures = new Set(result.filteredData.map(d => d.Structure));
-      totalStructure.value = uniqueStructures.size;
+      // Important : utiliser totalStructures du service (calculé sur données non filtrées)
+      totalStructure.value = result.totalStructures;
       
       // Update allele-specific positions
       if (result.alleleSpecificPositions) {

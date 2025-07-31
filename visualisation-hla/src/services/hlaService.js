@@ -125,13 +125,15 @@ export class HlaService {
     visiblePositions = null
   ) {
 
-    // Initial filtering by locus and threshold
+    // Calculer le total sur TOUTES les structures du locus (sans filtre de distance)
+    const allLocusData = data.filter(row => row.Locus === locus);
+    const totalStructures = _.uniqBy(allLocusData, 'Structure').length;
+
+    // Filtrage par locus et distance pour les calculs de positions
     const filteredData = data.filter(row =>
       row.Locus === locus &&
       parseFloat(row.Threshold) === distanceThreshold
     );
-
-    const totalStructures = _.uniqBy(filteredData, 'Structure').length;
     const positionInteractions = {};
     const uniquePositions = _.uniq(filteredData.map(row => row.ResidueID));
 
@@ -153,14 +155,25 @@ export class HlaService {
       );
       const tcrStructures = _.uniqBy(tcrContacts, 'Structure');
 
+      // Calculate union for "at least one" interaction (Peptide OR TCR)
+      const allInteractingContacts = posData.filter(row =>
+        row.InteractingChains.includes('Peptide') ||
+        row.InteractingChains.includes('TCRA') ||
+        row.InteractingChains.includes('TCRB')
+      );
+      const unionStructures = _.uniqBy(allInteractingContacts, 'Structure');
+
       const peptidePercentage = (peptideStructures.length / totalStructures) * 100;
       const tcrPercentage = (tcrStructures.length / totalStructures) * 100;
+      const unionPercentage = (unionStructures.length / totalStructures) * 100;
 
       positionInteractions[position] = {
         peptidePercentage,
         tcrPercentage,
+        unionPercentage,
         peptideStructures: peptideStructures.length,
-        tcrStructures: tcrStructures.length
+        tcrStructures: tcrStructures.length,
+        unionStructures: unionStructures.length
       };
     });
 
@@ -180,13 +193,17 @@ export class HlaService {
         positionWeighted[position] = 'Peptide + TCR';
       }
       else if (interactionType === 'Peptide or TCR') {
-        if (interactions.peptidePercentage > percentageThreshold &&
-          interactions.tcrPercentage > percentageThreshold) {
-          positionWeighted[position] = 'Peptide + TCR';
-        } else if (interactions.peptidePercentage > percentageThreshold) {
-          positionWeighted[position] = 'Peptide';
-        } else if (interactions.tcrPercentage > percentageThreshold) {
-          positionWeighted[position] = 'TCR';
+        // Use union percentage for "at least one" logic
+        if (interactions.unionPercentage > percentageThreshold) {
+          // Determine the specific type based on what interactions are present
+          if (interactions.peptidePercentage > percentageThreshold &&
+            interactions.tcrPercentage > percentageThreshold) {
+            positionWeighted[position] = 'Peptide + TCR';
+          } else if (interactions.peptidePercentage > percentageThreshold) {
+            positionWeighted[position] = 'Peptide';
+          } else {
+            positionWeighted[position] = 'TCR';
+          }
         }
       }
     });

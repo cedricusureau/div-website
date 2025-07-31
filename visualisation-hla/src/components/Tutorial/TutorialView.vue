@@ -555,6 +555,7 @@ export default {
     return {
       currentSection: 'introduction',
       showScrollTop: false,
+      isScrollingFromClick: false,
       sections: [
         {
           id: 'introduction',
@@ -664,12 +665,19 @@ export default {
   methods: {
     scrollToSection(sectionId) {
       this.currentSection = sectionId;
+      this.isScrollingFromClick = true;
+      
       const element = document.getElementById('section-' + sectionId);
       if (element) {
         element.scrollIntoView({ 
           behavior: 'smooth',
           block: 'start'
         });
+        
+        // Réactiver la détection automatique après l'animation
+        setTimeout(() => {
+          this.isScrollingFromClick = false;
+        }, 1000); // 1 seconde pour laisser le temps à l'animation de finir
       }
     },
     scrollToTop() {
@@ -680,6 +688,11 @@ export default {
     },
     handleScroll() {
       this.showScrollTop = window.pageYOffset > 300;
+      
+      // Ne pas mettre à jour la section si on est en train de défiler suite à un clic
+      if (this.isScrollingFromClick) {
+        return;
+      }
       
       // Update current section based on scroll position
       const sections = this.sections.map(s => s.id);
