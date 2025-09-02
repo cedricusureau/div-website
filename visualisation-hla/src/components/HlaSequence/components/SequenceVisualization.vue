@@ -257,7 +257,7 @@
         </div>
         
         <!-- Résultats compacts -->
-        <div v-if="alleleSpecificPositionsResult?.mismatches?.length || hed !== null || specificDivergence !== null" class="comparison-results-compact">
+        <div v-if="alleleSpecificPositionsResult?.mismatches?.length || cHed !== null || tHed !== null" class="comparison-results-compact">
           <div class="results-header">
             <span class="results-title">Divergence Results</span>
             <v-tooltip bottom>
@@ -285,11 +285,11 @@
                 {{ getFilteredMismatchCount() }} filtered
               </span>
             </span>
-            <span v-if="hed !== null" class="result-compact">
-              <span class="result-label-compact">HED:</span> <strong>{{ hed.toFixed(2) }}</strong>
+            <span v-if="cHed !== null" class="result-compact">
+              <span class="result-label-compact">c-HED:</span> <strong>{{ cHed?.toFixed(2) || 'N/A' }}</strong>
             </span>
-            <span v-if="specificDivergence !== null" class="result-compact">
-              <span class="result-label-compact">Targeted Divergence:</span> <strong>{{ specificDivergence.toFixed(2) }}</strong>
+            <span v-if="tHed !== null" class="result-compact">
+              <span class="result-label-compact">t-HED:</span> <strong>{{ tHed?.toFixed(2) || 'N/A' }}</strong>
             </span>
           </div>
         </div>
@@ -359,11 +359,11 @@ export default {
       type: Object,
       default: () => ({})
     },
-    hed: {
+    cHed: {
       type: Number,
       default: null
     },
-    specificDivergence: {
+    tHed: {
       type: Number,
       default: null
     },

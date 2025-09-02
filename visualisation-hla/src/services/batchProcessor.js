@@ -13,10 +13,10 @@ export class BatchProcessor {
         [
           'Pair1', 
           'Pair2', 
-          'HED', 
-          'Targeted Divergence',
-          'HED_Normalized',
-          'Normalized Targeted Divergence (0-1)',
+          'c-HED', 
+          't-HED',
+          'c-HED_Normalized',
+          't-HED_Normalized (0-1)',
           'Locus',
           'Distance Threshold (Å)',
           'Percentage Threshold (%)',
@@ -41,18 +41,18 @@ export class BatchProcessor {
           allele1, allele2, aCsv, bCsv, locus
         );
   
-        let hed = 0;
-        let specificDivergence = 0;
+        let cHed = 0;
+        let tHed = 0;
   
         if (alleleSpecificPositions && alleleSpecificPositions.mismatches) {
-          // Calculate HED
+          // Calculate c-HED
           const totalGranthamScore = alleleSpecificPositions.mismatches.reduce(
             (sum, mismatch) => sum + (mismatch.granthamScore || 0),
             0
           );
-          hed = totalGranthamScore / 181;
+          cHed = totalGranthamScore / 181;
   
-          // Calculate Specific Divergence using weighted positions
+          // Calculate t-HED using weighted positions
           const weightedMismatches = alleleSpecificPositions.mismatches.filter(
             mismatch => weightedPositions.includes(mismatch.position)
           );
@@ -62,18 +62,18 @@ export class BatchProcessor {
               (sum, mismatch) => sum + (mismatch.granthamScore || 0),
               0
             );
-            specificDivergence = weightedTotal / weightedPositions.length;
+            tHed = weightedTotal / weightedPositions.length;
           }
         }
   
-        maxHed = Math.max(maxHed, hed);
-        maxSpecificDivergence = Math.max(maxSpecificDivergence, specificDivergence);
+        maxHed = Math.max(maxHed, cHed);
+        maxSpecificDivergence = Math.max(maxSpecificDivergence, tHed);
   
         preliminaryResults.push({
           allele1,
           allele2,
-          hed,
-          specificDivergence
+          cHed,
+          tHed
         });
       }
   
@@ -81,19 +81,19 @@ export class BatchProcessor {
       const visualizationData = [];
       
       for (const result of preliminaryResults) {
-        const normalizedHed = maxHed > 0 ? 
-          result.hed / maxHed : 0;
-        const normalizedSpecific = maxSpecificDivergence > 0 ? 
-          result.specificDivergence / maxSpecificDivergence : 0;
+        const normalizedCHed = maxHed > 0 ? 
+          result.cHed / maxHed : 0;
+        const normalizedTHed = maxSpecificDivergence > 0 ? 
+          result.tHed / maxSpecificDivergence : 0;
   
         // Add to CSV results
         csvResults.push([
           result.allele1,
           result.allele2,
-          result.hed.toFixed(2),
-          result.specificDivergence.toFixed(2),
-          normalizedHed.toFixed(3),
-          normalizedSpecific.toFixed(3),
+          result.cHed.toFixed(2),
+          result.tHed.toFixed(2),
+          normalizedCHed.toFixed(3),
+          normalizedTHed.toFixed(3),
           analysisParams.locus,
           analysisParams.distance,
           analysisParams.percentage,
@@ -105,10 +105,10 @@ export class BatchProcessor {
         visualizationData.push({
           pair1: result.allele1,
           pair2: result.allele2,
-          hed: result.hed,
-          targetedDivergence: result.specificDivergence,
-          normalizedHed: normalizedHed,
-          normalizedTargetedDivergence: normalizedSpecific,
+          cHed: result.cHed,
+          tHed: result.tHed,
+          normalizedCHed: normalizedCHed,
+          normalizedTHed: normalizedTHed,
           pairLabel: `${result.allele1} vs ${result.allele2}`
         });
       }

@@ -208,8 +208,8 @@ export class HlaService {
       }
     });
 
-    let hed = null;
-    let specificDivergence = null;
+    let cHed = null;
+    let tHed = null;
     let alleleSpecificPositions = null;
 
     if (allele1 && allele2) {
@@ -226,7 +226,7 @@ export class HlaService {
           (sum, mismatch) => sum + (mismatch.granthamScore || 0),
           0
         );
-        hed = totalGranthamScore / 181;
+        cHed = totalGranthamScore / 181;
 
         // Utiliser les positions visibles si fournies, sinon utiliser toutes les positions
         const positionsForCalculation = visiblePositions ? Object.keys(visiblePositions) : Object.keys(positionWeighted);
@@ -242,7 +242,7 @@ export class HlaService {
             (sum, mismatch) => sum + (mismatch.granthamScore || 0),
             0
           );
-          specificDivergence = weightedTotal / positionsForCalculation.length;
+          tHed = weightedTotal / positionsForCalculation.length;
         }
       }
     }
@@ -250,8 +250,8 @@ export class HlaService {
     return {
       positionWeighted,
       alleleSpecificPositions,
-      hed,
-      specificDivergence,
+      cHed,
+      tHed,
       filteredData,
       totalStructures
     };

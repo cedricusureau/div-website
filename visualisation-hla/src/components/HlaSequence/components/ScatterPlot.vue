@@ -26,10 +26,10 @@
                 {{ visualizationData.length }} pairs
               </v-chip>
               <v-chip size="small" color="primary" variant="outlined">
-                X: HED Normalized (0-1)
+                X: c-HED Normalized (0-1)
               </v-chip>
               <v-chip size="small" color="secondary" variant="outlined">
-                Y: Targeted Divergence Normalized (0-1)
+                Y: t-HED Normalized (0-1)
               </v-chip>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default {
 
       // Color scale based on combined divergence  
       const colorScale = d3.scaleSequential()
-        .domain([0, Math.max(...this.visualizationData.map(d => Math.max(d.normalizedHed, d.normalizedTargetedDivergence)))])
+        .domain([0, Math.max(...this.visualizationData.map(d => Math.max(d.normalizedCHed, d.normalizedTHed)))])
         .interpolator(d3.interpolateViridis);
 
       // Add axes
@@ -177,7 +177,7 @@ export default {
         .attr("fill", "black")
         .style("text-anchor", "middle")
         .style("font-size", "12px")
-        .text("HED Normalized");
+        .text("c-HED Normalized");
 
       g.append("g")
         .call(d3.axisLeft(yScale).ticks(6))
@@ -188,7 +188,7 @@ export default {
         .attr("fill", "black")
         .style("text-anchor", "middle")
         .style("font-size", "12px")
-        .text("Targeted Divergence Normalized");
+        .text("t-HED Normalized");
 
       // Add grid lines
       g.append("g")
@@ -226,10 +226,10 @@ export default {
         .data(this.visualizationData)
         .enter().append("circle")
         .attr("class", "dot")
-        .attr("cx", d => xScale(d.normalizedHed))
-        .attr("cy", d => yScale(d.normalizedTargetedDivergence))
+        .attr("cx", d => xScale(d.normalizedCHed))
+        .attr("cy", d => yScale(d.normalizedTHed))
         .attr("r", 6)
-        .style("fill", d => colorScale(Math.max(d.normalizedHed, d.normalizedTargetedDivergence)))
+        .style("fill", d => colorScale(Math.max(d.normalizedCHed, d.normalizedTHed)))
         .style("opacity", 0.8)
         .style("stroke", "#fff")
         .style("stroke-width", 1.5)
@@ -250,10 +250,10 @@ export default {
           
           this.tooltip.html(`
             <div style="font-weight: bold; margin-bottom: 4px;">${d.pairLabel}</div>
-            <div>HED: ${d.hed.toFixed(3)}</div>
-            <div>Targeted Divergence: ${d.targetedDivergence.toFixed(3)}</div>
-            <div>HED Normalized: ${d.normalizedHed.toFixed(3)}</div>
-            <div>Targeted Divergence Normalized: ${d.normalizedTargetedDivergence.toFixed(3)}</div>
+            <div>c-HED: ${d.cHed?.toFixed(3) || 'N/A'}</div>
+            <div>t-HED: ${d.tHed?.toFixed(3) || 'N/A'}</div>
+            <div>c-HED Normalized: ${d.normalizedCHed.toFixed(3)}</div>
+            <div>t-HED Normalized: ${d.normalizedTHed.toFixed(3)}</div>
           `)
             .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 10) + "px");

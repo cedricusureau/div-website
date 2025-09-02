@@ -45,9 +45,9 @@
             </p>
             
             <div class="concept-section">
-              <h3 class="subsection-title">🎯 Targeted Divergence: Core Concept</h3>
+              <h3 class="subsection-title">🎯 t-HED (Targeted HED): Core Concept</h3>
               <p class="tutorial-text">
-                The <strong>Targeted Divergence</strong> is a metric inspired by the classical <strong>HLA Evolutionary Divergence (HED)</strong> 
+                The <strong>t-HED (Targeted HLA Evolutionary Divergence)</strong> is a metric inspired by the <strong>c-HED (Classical HLA Evolutionary Divergence)</strong> 
                 <span class="publication-links">
                   [<a href="https://www.nature.com/articles/s41591-019-0639-4" target="_blank" class="publication-link">Chowell, 2019</a>, 
                   <a href="http://dx.doi.org/10.1093/molbev/msy116" target="_blank" class="publication-link">Lenz et al., 2018</a>]
@@ -56,9 +56,9 @@
               </p>
               
               <p class="tutorial-text">
-                Unlike the classical HLA Evolutionary Divergence (HED), which sums differences across all 181 positions in the peptide-binding domains, 
-                our targeted divergence calculates divergence only for positions directly involved in contact with peptides or TCRs. 
-                Targeted divergence therefore emphasises these biologically important sites.
+                Unlike the c-HED (classical HLA Evolutionary Divergence), which sums differences across all 181 positions in the peptide-binding domains, 
+                t-HED (targeted HED) calculates divergence only for positions directly involved in contact with peptides or TCRs. 
+                t-HED therefore emphasises these biologically important sites.
               </p>
             </div>
 
@@ -81,11 +81,11 @@
             <v-alert type="info" variant="tonal" class="my-4">
               <strong>What you can do with TCR-Touch:</strong>
               <ul class="mt-2">
-                <li>Calculate HED and Targeted Divergence between HLA-A and HLA-B alleles</li>
+                <li>Calculate c-HED and t-HED between HLA-A and HLA-B alleles</li>
                 <li>Filter positions based on interaction types (Peptide, TCR, or both)</li>
                 <li>Apply distance thresholds (2.0-7.5 Å) and frequency to select HLA positions based on your criteria</li>
                 <li>Visualize sequence positions and amino acid mismatches with comprehensive visualization of interactions</li>
-                <li>Perform batch analysis on multiple allele pairs to calculate targeted divergence on your cohort</li>
+                <li>Perform batch analysis on multiple allele pairs to calculate t-HED on your cohort</li>
                 <li>Browse the complete structures database with statistics</li>
               </ul>
             </v-alert>
@@ -299,18 +299,18 @@
               <h3 class="subsection-title">📊 Understanding Divergence Metrics</h3>
               
               <div class="metric-explanation">
-                <h4>HED (HLA Evolutionary Divergence)</h4>
-                <p>HLA Evolutionary Divergence calculated across all 181 positions of the HLA sequence.</p>
+                <h4>c-HED (Classical HLA Evolutionary Divergence)</h4>
+                <p>Classical HLA Evolutionary Divergence calculated across all 181 positions of the HLA sequence.</p>
                 <div class="formula">
-                  <code>HED = Σ(Grantham Scores) / 181</code>
+                  <code>c-HED = Σ(Grantham Scores) / 181</code>
                 </div>
               </div>
 
               <div class="metric-explanation">
-                <h4>Targeted Divergence</h4>
-                <p>Focused divergence calculated only for positions that meet your filtering criteria.</p>
+                <h4>t-HED (Targeted HED)</h4>
+                <p>Targeted HLA Evolutionary Divergence calculated only for positions that meet your filtering criteria (positions in contact with peptides and/or TCRs).</p>
                 <div class="formula">
-                  <code>Targeted Divergence = Σ(Grantham Scores in filtered positions) / Number of filtered positions</code>
+                  <code>t-HED = Σ(Grantham Scores in filtered positions) / Number of filtered positions</code>
                 </div>
               </div>
 
@@ -318,8 +318,8 @@
                 <strong>Interpreting Divergence Scores:</strong>
                 <ul class="mt-2">
                   <li>Higher values indicate greater evolutionary divergence between alleles</li>
-                  <li>Because classical HED and targeted divergence use different denominators, you should normalise both scores on a 0–1 scale before comparing them</li>
-                  <li>A high normalised targeted divergence highlights large differences at functionally relevant positions</li>
+                  <li>Because c-HED and t-HED use different denominators, you should normalise both scores on a 0–1 scale before comparing them</li>
+                  <li>A high normalised t-HED highlights large differences at functionally relevant positions</li>
                   <li>Compare values within the same parameter set for meaningful results</li>
                 </ul>
               </v-alert>
@@ -397,17 +397,17 @@
                     <h5>Basic Information</h5>
                     <ul class="column-list">
                       <li><strong>Allele1, Allele2:</strong> The compared HLA alleles</li>
-                      <li><strong>HED:</strong> Raw HED value (sum of Grantham scores / 181)</li>
-                      <li><strong>Targeted_Divergence:</strong> Raw targeted divergence (sum of Grantham scores / filtered positions)</li>
-                      <li><strong>Positions_Count:</strong> Number of positions used for targeted divergence calculation</li>
+                      <li><strong>c-HED:</strong> Raw c-HED value (sum of Grantham scores / 181)</li>
+                      <li><strong>t-HED:</strong> Raw t-HED value (sum of Grantham scores / filtered positions)</li>
+                      <li><strong>Positions_Count:</strong> Number of positions used for t-HED calculation</li>
                     </ul>
                   </div>
                   
                   <div class="column-group">
                     <h5>Normalized Values</h5>
                     <ul class="column-list">
-                      <li><strong>HED_Normalized:</strong> HED normalized between 0-1</li>
-                      <li><strong>Targeted_Divergence_Normalized:</strong> Targeted divergence normalized between 0-1</li>
+                      <li><strong>c-HED_Normalized:</strong> c-HED normalized between 0-1</li>
+                      <li><strong>t-HED_Normalized:</strong> t-HED normalized between 0-1</li>
                     </ul>
                   </div>
                 </div>
@@ -416,11 +416,11 @@
               <v-alert type="warning" variant="tonal" class="my-4">
                 <strong>⚠️ Important: Why Normalization Matters</strong>
                 <p class="mt-2">
-                  HED and Targeted Divergence values <strong>cannot be compared directly</strong> because they use different denominators:
+                  c-HED and t-HED values <strong>cannot be compared directly</strong> because they use different denominators:
                 </p>
                 <ul class="mt-2">
-                  <li><strong>HED:</strong> Always divided by 181 positions (Exon 2-3)</li>
-                  <li><strong>Targeted Divergence:</strong> Divided by variable number of filtered positions (e.g., 5-50 positions)</li>
+                  <li><strong>c-HED:</strong> Always divided by 181 positions (Exon 2-3)</li>
+                  <li><strong>t-HED:</strong> Divided by variable number of filtered positions (e.g., 5-50 positions)</li>
                 </ul>
                 <p class="mt-2">
                   <strong>Normalization (0-1 scale)</strong> allows meaningful comparison where <strong>1 = highest value</strong> in your dataset.

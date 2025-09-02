@@ -62,8 +62,8 @@
                   :positions="positions"
                   :total-positions="filteredPositionsKeys.length"  
                   :allele-specific-positions-result="alleleSpecificPositionsResult"
-                  :hed="hed"
-                  :specific-divergence="specificDivergence"
+                  :cHed="cHed"
+                  :tHed="tHed"
                   :filtered-contact-data="filteredContactDataByPositions"
                   :selectedPositions="explorationSelectedPositions"
                   :current-locus="formParams.locus"
@@ -119,8 +119,8 @@ export default {
       aCsvData,
       bCsvData,
       alleleSpecificPositionsResult,
-      hed,
-      specificDivergence,
+      cHed,
+      tHed,
       filteredContactData,
       totalStructure,
       rawPositions
@@ -317,8 +317,8 @@ export default {
       aCsvData,
       bCsvData,
       alleleSpecificPositionsResult,
-      hed,
-      specificDivergence,
+      cHed,
+      tHed,
       filteredContactDataByPositions,
       filteredPositionsKeys,
       analysisParamsComputed,
