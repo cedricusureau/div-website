@@ -1,6 +1,5 @@
-/* eslint-disable */
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, getCurrentInstance } from 'vue'
 import { loadStructuresData } from '../../services/hlaStructuresService'
 import Papa from 'papaparse'
 
@@ -276,7 +275,8 @@ const vdjdbHeaders = ref([
   { title: 'TCRmodel2 pmhc-iptm score', key: 'TCRmodel2-pmhc-iptm-score', visible: true },
   { title: 'Reference', key: 'Reference', visible: false },
   { title: 'TCRA Sequence', key: 'TCRA_seq', visible: false },
-  { title: 'TCRB Sequence', key: 'TCRB_seq', visible: false }
+  { title: 'TCRB Sequence', key: 'TCRB_seq', visible: false },
+  { title: 'Actions', key: 'actions', visible: true, sortable: false, width: '100px' }
 ])
 
 // PDB table headers with visibility control
@@ -453,9 +453,37 @@ const openTutorial = () => {
   window.open(window.location.origin + '?openTutorial=true', '_blank');
 }
 
+// Émission d'événements avec l'instance du composant
+const instance = getCurrentInstance()
+const emit = instance.emit
+
+// Fonction pour ouvrir le visualiseur 3D avec une structure VDJdb  
+const open3DViewer = (structure) => {
+  console.log('Opening 3D viewer for structure:', structure)
+  emit('open-3d-viewer', {
+    locus: structure.Locus,
+    structureId: structure.Structure_fullname,
+    positions: [], // Pas de positions présélectionnées
+    distance: '3',
+    percentage: '50',
+    interactionType: 'Peptide or TCR',
+    allele1: '',
+    allele2: '',
+    showPolymorphicOnly: false,
+    entropyThreshold: '0.2'
+  })
+}
+
 onMounted(() => {
   loadAllData()
 })
+</script>
+
+<script>
+export default {
+  name: 'HlaStructuresView',
+  emits: ['open-3d-viewer']
+}
 </script>
 
 <template>
@@ -673,6 +701,24 @@ onMounted(() => {
             >
               {{ value.toFixed(3) }}
             </v-chip>
+          </template>
+          <template #[`item.actions`]="{ item }">
+            <v-tooltip bottom>
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon
+                  size="small"
+                  variant="text"
+                  color="primary"
+                  @click="open3DViewer(item)"
+                  :disabled="!item.Structure_fullname"
+                >
+                  <v-icon size="small">mdi-cube-outline</v-icon>
+                </v-btn>
+              </template>
+              <span>Visualiser en 3D</span>
+            </v-tooltip>
           </template>
           <template #loading>
             <v-progress-linear 

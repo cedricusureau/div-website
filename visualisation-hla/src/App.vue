@@ -46,7 +46,10 @@
           v-if="currentView === 'sequence'" 
           @switch-to-batch="switchToBatch"
         />
-        <HlaStructuresView v-if="currentView === 'structures'" />
+        <HlaStructuresView 
+          v-if="currentView === 'structures'" 
+          @open-3d-viewer="switchToStructureViewer"
+        />
         <StatisticsView v-if="currentView === 'statistics'" />
         <TutorialView v-if="currentView === 'tutorial'" />
         <BatchAnalysis 

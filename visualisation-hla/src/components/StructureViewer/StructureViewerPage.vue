@@ -261,7 +261,10 @@ const getDefaultStructureForLocus = (locus) => {
   return '21460_VDJdb_gp100_HomoSapiens_A_0201_YLEPGPVTA_score_3' // Best A structure (0.881)
 }
 
-const selectedStructureId = ref(getDefaultStructureForLocus(props.viewerParams?.locus || 'A'))
+const selectedStructureId = ref(
+  props.viewerParams?.structureId || 
+  getDefaultStructureForLocus(props.viewerParams?.locus || 'A')
+)
 const structureData = ref(null)
 
 // Get parameters from props or defaults
