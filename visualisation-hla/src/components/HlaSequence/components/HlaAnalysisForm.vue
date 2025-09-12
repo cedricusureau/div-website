@@ -147,6 +147,17 @@
         <!-- Boutons d'actions rapides -->
         <v-row dense class="mt-2">
           <v-col cols="8">
+            <v-btn
+              @click="openStructureViewer"
+              variant="outlined"
+              size="small"
+              color="primary"
+              class="visualize-btn"
+              :disabled="filteredPositions.length === 0"
+            >
+              <v-icon size="small">mdi-molecule</v-icon>
+              Visualize 3D
+            </v-btn>
           </v-col>
           <v-col cols="4" class="text-right">
             <v-btn
@@ -294,6 +305,31 @@ export default {
       Object.keys(defaultParams).forEach(key => {
         this.updateParam(key, defaultParams[key]);
       });
+    },
+    openStructureViewer() {
+      // Open structure viewer in new browser tab with parameters
+      const params = {
+        locus: this.formParams.locus,
+        positions: this.filteredPositions.join(','),
+        distance: this.formParams.distance,
+        percentage: this.formParams.percentage,
+        interactionType: this.formParams.interactionType,
+        allele1: this.formParams.allele1,
+        allele2: this.formParams.allele2,
+        showPolymorphicOnly: this.formParams.showPolymorphicOnly,
+        entropyThreshold: this.formParams.entropyThreshold
+      };
+      
+      const urlParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== '' && params[key] !== null && params[key] !== undefined) {
+          urlParams.set(key, params[key]);
+        }
+      });
+      
+      // Open in new tab with structure viewer
+      const newUrl = `${window.location.origin}?view=structureViewer&${urlParams.toString()}`;
+      window.open(newUrl, '_blank');
     }
   }
 }
@@ -711,6 +747,12 @@ export default {
 
 .reset-btn:hover {
   opacity: 1;
+}
+
+.visualize-btn {
+  text-transform: none !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
 }
 
 /* Correction de l'affichage des items du select */

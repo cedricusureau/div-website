@@ -54,18 +54,24 @@
           :analysisParams="batchParams"
           @back-to-sequence="currentView = 'sequence'"
         />
+        <StructureViewerPage 
+          v-if="currentView === 'structureViewer'"
+          :viewerParams="structureViewerParams"
+          @back-to-analysis="currentView = 'sequence'"
+        />
       </div>
     </v-main>
   </v-app>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import HlaSequence from './components/HlaSequence/HlaSequenceAnalysis.vue'
 import HlaStructuresView from './components/HlaStructures/HlaStructuresView.vue'
 import StatisticsView from './components/Statistics/StatisticsView.vue'
 import TutorialView from './components/Tutorial/TutorialView.vue'
 import BatchAnalysis from './components/HlaSequence/components/BatchAnalysis.vue'
+import StructureViewerPage from './components/StructureViewer/StructureViewerPage.vue'
 
 export default {
   name: 'App',
@@ -74,29 +80,66 @@ export default {
     HlaStructuresView,
     StatisticsView,
     TutorialView,
-    BatchAnalysis
+    BatchAnalysis,
+    StructureViewerPage
   },
   setup() {
   const currentView = ref('sequence');
   const batchParams = ref(null);
+  const structureViewerParams = ref(null);
   
   const switchToBatch = (data) => {
     batchParams.value = {...data};  // Make a shallow copy
     currentView.value = 'batch';
   };
 
-  // Vérifier si on doit ouvrir le tutoriel automatiquement
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('openTutorial') === 'true') {
-    currentView.value = 'tutorial';
-    // Nettoyer l'URL
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
+  const switchToStructureViewer = (data) => {
+    structureViewerParams.value = {...data};  // Make a shallow copy
+    currentView.value = 'structureViewer';
+  };
+
+  // Fonction pour vérifier et traiter les paramètres URL
+  const checkUrlParams = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.get('openTutorial') === 'true') {
+      currentView.value = 'tutorial';
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('view') === 'structureViewer') {
+      currentView.value = 'structureViewer';
+      // Passer les paramètres au visualiseur
+      structureViewerParams.value = {
+        locus: urlParams.get('locus') || 'A',
+        positions: urlParams.get('positions') ? urlParams.get('positions').split(',') : [],
+        distance: urlParams.get('distance') || '3',
+        percentage: urlParams.get('percentage') || '50',
+        interactionType: urlParams.get('interactionType') || 'Peptide or TCR',
+        allele1: urlParams.get('allele1') || '',
+        allele2: urlParams.get('allele2') || '',
+        showPolymorphicOnly: urlParams.get('showPolymorphicOnly') === 'true',
+        entropyThreshold: urlParams.get('entropyThreshold') || '0.2'
+      };
+    }
+  };
+
+  // Vérifier les paramètres URL au montage
+  onMounted(() => {
+    // Petit délai pour s'assurer que tout est bien chargé
+    setTimeout(() => {
+      checkUrlParams();
+    }, 100);
+  });
+
+  // Vérifier aussi immédiatement (au cas où)
+  checkUrlParams();
 
   return {
     currentView,
     batchParams,
-    switchToBatch
+    structureViewerParams,
+    switchToBatch,
+    switchToStructureViewer
   };
 }
 }

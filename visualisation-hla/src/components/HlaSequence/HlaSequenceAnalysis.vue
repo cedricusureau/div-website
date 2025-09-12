@@ -102,6 +102,7 @@ import BatchAnalysis from './components/BatchAnalysis.vue';
 
 export default {
   name: 'HlaSequence',
+  emits: ['switch-to-batch'],
   components: {
     HlaAnalysisForm,
     SequenceVisualization,
@@ -295,6 +296,7 @@ export default {
         allele2: alleles.allele2
       });
     };
+
 
     onMounted(() => {
       initializeData();
