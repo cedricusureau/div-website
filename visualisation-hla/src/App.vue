@@ -15,12 +15,16 @@
       
       <v-spacer></v-spacer>
       
-      <v-tabs 
-        v-model="currentView" 
+      <v-tabs
+        v-model="currentView"
         color="white"
         slider-color="white"
         hide-slider
       >
+        <v-tab value="home" class="nav-tab">
+          <v-icon left small class="mr-2">mdi-home</v-icon>
+          Home
+        </v-tab>
         <v-tab value="sequence" class="nav-tab">
           <v-icon left small class="mr-2">mdi-calculator-variant</v-icon>
           Divergence Calculation
@@ -43,6 +47,10 @@
     <v-main>
       <main class="app-content" role="main">
         <h1 class="sr-only">TCR-Touch: HLA-TCR-Peptide Contact Database and Analysis Tool</h1>
+
+        <section v-if="currentView === 'home'" aria-label="Home">
+          <HomeView @navigate="navigateFromHome" />
+        </section>
 
         <section v-if="currentView === 'sequence'" aria-label="Divergence Calculation">
           <HlaSequence @switch-to-batch="switchToBatch" />
@@ -80,6 +88,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
+import HomeView from './components/Home/HomeView.vue'
 import HlaSequence from './components/HlaSequence/HlaSequenceAnalysis.vue'
 import HlaStructuresView from './components/HlaStructures/HlaStructuresView.vue'
 import StatisticsView from './components/Statistics/StatisticsView.vue'
@@ -90,6 +99,7 @@ import StructureViewerPage from './components/StructureViewer/StructureViewerPag
 export default {
   name: 'App',
   components: {
+    HomeView,
     HlaSequence,
     HlaStructuresView,
     StatisticsView,
@@ -98,7 +108,7 @@ export default {
     StructureViewerPage
   },
   setup() {
-  const currentView = ref('sequence');
+  const currentView = ref('home');
   const batchParams = ref(null);
   const structureViewerParams = ref(null);
   
@@ -110,6 +120,10 @@ export default {
   const switchToStructureViewer = (data) => {
     structureViewerParams.value = {...data};  // Make a shallow copy
     currentView.value = 'structureViewer';
+  };
+
+  const navigateFromHome = (view) => {
+    currentView.value = view;
   };
 
   // Fonction pour vérifier et traiter les paramètres URL
@@ -153,7 +167,8 @@ export default {
     batchParams,
     structureViewerParams,
     switchToBatch,
-    switchToStructureViewer
+    switchToStructureViewer,
+    navigateFromHome
   };
 }
 }
@@ -163,6 +178,11 @@ export default {
 .app-content {
   padding: 1rem;
   max-width: 100%;
+}
+
+/* Remove padding for home page */
+.app-content section[aria-label="Home"] {
+  margin: -1rem;
 }
 
 .header-title {
