@@ -106,7 +106,8 @@
             <p>
               Website under development accompanying a scientific publication about t-HED,
               scientific review not yet peer-reviewed. This work is a collaboration between INSERM UMR1342,
-              MICS laboratory of CentraleSupélec, and Institut Gustave Roussy.
+              MICS laboratory of CentraleSupélec, Institut Gustave Roussy, and the Laboratory of Immunology
+              and Histocompatibility of Hôpital Saint-Louis.
             </p>
             <p>
               <strong>Research use only</strong><br>
