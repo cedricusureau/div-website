@@ -41,28 +41,39 @@
     </v-app-bar>
 
     <v-main>
-      <div class="app-content">
-        <HlaSequence 
-          v-if="currentView === 'sequence'" 
-          @switch-to-batch="switchToBatch"
-        />
-        <HlaStructuresView 
-          v-if="currentView === 'structures'" 
-          @open-3d-viewer="switchToStructureViewer"
-        />
-        <StatisticsView v-if="currentView === 'statistics'" />
-        <TutorialView v-if="currentView === 'tutorial'" />
-        <BatchAnalysis 
-          v-if="currentView === 'batch'"
-          :analysisParams="batchParams"
-          @back-to-sequence="currentView = 'sequence'"
-        />
-        <StructureViewerPage 
-          v-if="currentView === 'structureViewer'"
-          :viewerParams="structureViewerParams"
-          @back-to-analysis="currentView = 'sequence'"
-        />
-      </div>
+      <main class="app-content" role="main">
+        <h1 class="sr-only">TCR-Touch: HLA-TCR-Peptide Contact Database and Analysis Tool</h1>
+
+        <section v-if="currentView === 'sequence'" aria-label="Divergence Calculation">
+          <HlaSequence @switch-to-batch="switchToBatch" />
+        </section>
+
+        <section v-if="currentView === 'structures'" aria-label="Structures Database">
+          <HlaStructuresView @open-3d-viewer="switchToStructureViewer" />
+        </section>
+
+        <section v-if="currentView === 'statistics'" aria-label="Statistics">
+          <StatisticsView />
+        </section>
+
+        <section v-if="currentView === 'tutorial'" aria-label="Tutorial">
+          <TutorialView />
+        </section>
+
+        <section v-if="currentView === 'batch'" aria-label="Batch Analysis">
+          <BatchAnalysis
+            :analysisParams="batchParams"
+            @back-to-sequence="currentView = 'sequence'"
+          />
+        </section>
+
+        <section v-if="currentView === 'structureViewer'" aria-label="3D Structure Viewer">
+          <StructureViewerPage
+            :viewerParams="structureViewerParams"
+            @back-to-analysis="currentView = 'sequence'"
+          />
+        </section>
+      </main>
     </v-main>
   </v-app>
 </template>
@@ -225,10 +236,23 @@ export default {
   }
 }
 
+/* Screen reader only class for accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Animation subtile au hover */
-button:hover, 
-a:hover, 
-.v-btn:hover, 
+button:hover,
+a:hover,
+.v-btn:hover,
 .v-tab:hover {
   transition: transform 0.1s ease;
   transform: scale(1.02);

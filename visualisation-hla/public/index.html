@@ -1,11 +1,51 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>TCR-Touch | HLA-TCR-Peptide Contact Database & Analysis Tool</title>
+    <meta name="description" content="TCR-Touch is a comprehensive bioinformatics tool for analyzing HLA-TCR-peptide interactions, calculating evolutionary divergence (c-HED and t-HED), and visualizing molecular structures. Access VDJdb and PDB databases with interactive 3D visualization.">
+    <meta name="keywords" content="HLA, TCR, peptide, MHC, immunology, bioinformatics, evolutionary divergence, c-HED, t-HED, VDJdb, PDB, molecular structure, protein visualization, immune system, allele analysis">
+    <meta name="author" content="TCR-Touch Team">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="TCR-Touch | HLA-TCR-Peptide Contact Database">
+    <meta property="og:description" content="Advanced bioinformatics tool for HLA-TCR-peptide interaction analysis and visualization">
+    <meta property="og:image" content="<%= BASE_URL %>og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="TCR-Touch | HLA-TCR-Peptide Contact Database">
+    <meta property="twitter:description" content="Advanced bioinformatics tool for HLA-TCR-peptide interaction analysis and visualization">
+    <meta property="twitter:image" content="<%= BASE_URL %>og-image.png">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://tcrtouch.centralesupelec.fr">
+
+    <!-- Favicon -->
     <link rel="icon" href="<%= BASE_URL %>favicon.png">
-    <title>TCR Touch</title>
+    <link rel="apple-touch-icon" href="<%= BASE_URL %>apple-touch-icon.png">
+
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "TCR-Touch",
+      "description": "Comprehensive bioinformatics tool for HLA-TCR-peptide interaction analysis",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
   </head>
   <body>
     <noscript>

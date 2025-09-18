@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Main page / Home -->
+  <url>
+    <loc>https://tcrtouch.centralesupelec.fr/</loc>
+    <lastmod>2024-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Divergence Calculation -->
+  <url>
+    <loc>https://tcrtouch.centralesupelec.fr/?view=sequence</loc>
+    <lastmod>2024-12-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Structures Database -->
+  <url>
+    <loc>https://tcrtouch.centralesupelec.fr/?view=structures</loc>
+    <lastmod>2024-12-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Statistics -->
+  <url>
+    <loc>https://tcrtouch.centralesupelec.fr/?view=statistics</loc>
+    <lastmod>2024-12-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Tutorial -->
+  <url>
+    <loc>https://tcrtouch.centralesupelec.fr/?view=tutorial</loc>
+    <lastmod>2024-12-18</lastmod>
+    <changefreq>quarterly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>
