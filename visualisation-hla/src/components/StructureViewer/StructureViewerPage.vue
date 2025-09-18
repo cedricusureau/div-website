@@ -57,11 +57,23 @@
             </v-chip>
           </div>
 
-          <!-- Compact selected positions -->
-          <div v-if="selectedPositions && selectedPositions.length > 0" class="px-3 pb-2">
+          <!-- Mode display indicator -->
+          <div class="px-3 pb-1">
+            <v-chip
+              :color="hasFilteredPositions ? 'success' : 'info'"
+              variant="outlined"
+              size="x-small"
+              class="text-caption"
+            >
+              {{ hasFilteredPositions ? 'Filtered Positions Mode' : 'Manual Highlighting Mode' }}
+            </v-chip>
+          </div>
+
+          <!-- Filtered positions mode: show provided positions -->
+          <div v-if="hasFilteredPositions && selectedPositions && selectedPositions.length > 0" class="px-3 pb-2">
             <div class="text-caption mb-1 d-flex align-center">
               <v-icon size="x-small" class="mr-1">mdi-map-marker</v-icon>
-              Positions ({{ selectedPositions.length }}) - Click to highlight
+              Filtered Positions ({{ selectedPositions.length }}) - Click to highlight
             </div>
             <div class="d-flex flex-wrap gap-1">
               <v-chip
@@ -79,6 +91,53 @@
             </div>
             <div v-if="highlightedPosition" class="text-xs text-cyan mt-1">
               Position {{ highlightedPosition }} highlighted
+            </div>
+          </div>
+
+          <!-- Manual mode: allow manual position input -->
+          <div v-else class="px-3 pb-2">
+            <div class="text-caption mb-1 d-flex align-center">
+              <v-icon size="x-small" class="mr-1">mdi-map-marker-plus</v-icon>
+              Highlight HLA Position
+            </div>
+            <v-text-field
+              v-model="manualPositionInput"
+              density="compact"
+              variant="outlined"
+              placeholder="e.g., 65"
+              hide-details
+              type="number"
+              @keyup.enter="highlightManualPosition"
+            >
+              <template #append-inner>
+                <v-btn
+                  size="x-small"
+                  variant="text"
+                  icon
+                  @click="highlightManualPosition"
+                  :disabled="!manualPositionInput"
+                >
+                  <v-icon size="small">mdi-magnify</v-icon>
+                </v-btn>
+              </template>
+            </v-text-field>
+            <div v-if="manualHighlightedPositions.length > 0" class="mt-2">
+              <div class="text-caption mb-1">Highlighted positions:</div>
+              <div class="d-flex flex-wrap gap-1">
+                <v-chip
+                  v-for="pos in manualHighlightedPositions"
+                  :key="pos"
+                  size="x-small"
+                  :color="highlightedPosition === pos ? 'cyan' : 'red'"
+                  :variant="highlightedPosition === pos ? 'flat' : 'outlined'"
+                  class="text-caption position-chip"
+                  closable
+                  @click="togglePositionHighlight(pos)"
+                  @click:close="removeManualPosition(pos)"
+                >
+                  {{ pos }}
+                </v-chip>
+              </div>
             </div>
           </div>
 
@@ -144,44 +203,76 @@
               />
             </div>
 
+            <!-- Position Labels Toggle -->
+            <div class="control-group">
+              <label class="control-label">
+                <v-icon small class="mr-1">mdi-label-outline</v-icon>
+                Position Labels
+              </label>
+              <v-switch
+                v-model="showPositionLabels"
+                density="compact"
+                color="primary"
+                hide-details
+                :label="showPositionLabels ? 'Show Numbers' : 'Hide Numbers'"
+                class="mb-2"
+              />
+            </div>
 
-            <!-- Chain Visibility & Colors -->
+
+            <!-- Chain Visibility & Styles -->
             <div class="control-group">
               <label class="control-label">
                 <v-icon small class="mr-1">mdi-eye</v-icon>
-                Chain Visibility
+                Chain Controls
               </label>
               <div class="chain-controls">
                 <div 
                   v-for="(color, chain) in chainColors" 
                   :key="chain" 
-                  class="chain-item"
+                  class="chain-item-extended"
                 >
-                  <div class="chain-info">
-                    <div 
-                      class="color-dot" 
-                      :style="{ 
-                        backgroundColor: chainVisibility[chain] ? color : '#ccc',
-                        opacity: chainVisibility[chain] ? 1 : 0.5 
-                      }"
-                    ></div>
-                    <span 
-                      class="chain-label"
-                      :class="{ 'chain-hidden': !chainVisibility[chain] }"
+                  <!-- Chain info and visibility toggle -->
+                  <div class="chain-header">
+                    <div class="chain-info">
+                      <div 
+                        class="color-dot" 
+                        :style="{ 
+                          backgroundColor: chainVisibility[chain] ? color : '#ccc',
+                          opacity: chainVisibility[chain] ? 1 : 0.5 
+                        }"
+                      ></div>
+                      <span 
+                        class="chain-label"
+                        :class="{ 'chain-hidden': !chainVisibility[chain] }"
+                      >
+                        {{ chainLabels[chain] }}
+                      </span>
+                    </div>
+                    <v-btn
+                      :color="chainVisibility[chain] ? 'primary' : 'grey'"
+                      :variant="chainVisibility[chain] ? 'text' : 'outlined'"
+                      size="small"
+                      @click="toggleChainVisibility(chain)"
                     >
-                      {{ chainLabels[chain] }}
-                    </span>
+                      <v-icon size="small">
+                        {{ chainVisibility[chain] ? 'mdi-eye' : 'mdi-eye-off' }}
+                      </v-icon>
+                    </v-btn>
                   </div>
-                  <v-btn
-                    :color="chainVisibility[chain] ? 'primary' : 'grey'"
-                    :variant="chainVisibility[chain] ? 'text' : 'outlined'"
-                    size="small"
-                    @click="toggleChainVisibility(chain)"
-                  >
-                    <v-icon size="small">
-                      {{ chainVisibility[chain] ? 'mdi-eye' : 'mdi-eye-off' }}
-                    </v-icon>
-                  </v-btn>
+                  
+                  <!-- Individual chain style selector -->
+                  <div v-if="chainVisibility[chain]" class="chain-style-selector mt-1">
+                    <v-select
+                      v-model="chainStyles[chain]"
+                      :items="chainRepresentationOptions"
+                      density="compact"
+                      variant="outlined"
+                      hide-details
+                      :placeholder="`Style for ${chainLabels[chain]}`"
+                      class="chain-style-select"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -250,9 +341,17 @@ const error = ref(null)
 const globalRepresentation = ref('cartoon')
 const hlaRepresentation = ref('stick')
 const showHlaPositionsOverlay = ref(false) // Default: Combined View (global + filtered)
+const showPositionLabels = ref(false) // Toggle for position labels
 
 // Individual position highlighting
 const highlightedPosition = ref(null)
+
+// Position labels storage
+const positionLabels = ref([])
+
+// Manual position highlighting (when no positions from props)
+const manualPositionInput = ref('')
+const manualHighlightedPositions = ref([])
 // Default structure based on locus - best scores
 const getDefaultStructureForLocus = (locus) => {
   if (locus === 'B') {
@@ -270,7 +369,18 @@ const structureData = ref(null)
 // Get parameters from props or defaults
 // eslint-disable-next-line no-unused-vars
 const locus = ref(props.viewerParams?.locus || 'A')
-const selectedPositions = ref(props.viewerParams?.positions || [])
+
+// Detect access mode: if positions are provided, we're in "filtered positions mode"
+// If no positions (empty array), we're in "manual mode" (from structure database)
+const hasFilteredPositions = computed(() => 
+  props.viewerParams?.positions && props.viewerParams.positions.length > 0
+)
+
+// In filtered positions mode, use provided positions
+// In manual mode, start with empty positions
+const selectedPositions = ref(
+  hasFilteredPositions.value ? props.viewerParams.positions : []
+)
 
 // Chain colors and visibility for visualization
 const chainColors = {
@@ -295,16 +405,28 @@ const chainVisibility = ref({
   'D': true   // HLA visible by default
 })
 
+// Individual chain styles (override global style when set)
+const chainStyles = ref({
+  'A': 'global',  // Use global style by default
+  'B': 'global',
+  'C': 'global', 
+  'D': 'global'
+})
+
 // Structure options - organized by locus with best scores first
 const allStructureOptions = {
   A: [
     { text: '21460 - A*02:01 - YLEPGPVTA - 0.881', value: '21460_VDJdb_gp100_HomoSapiens_A_0201_YLEPGPVTA_score_3' },
+    { text: '34114 - A*24:02 - RFPLTFGWCF - 0.875', value: '34114_VDJdb_Nef_HIV-1_A_2402_RFPLTFGWCF_score_3' },
+    { text: '34115 - A*24:02 - RYPLTFGWCF - 0.870', value: '34115_VDJdb_Nef_HIV-1_A_2402_RYPLTFGWCF_score_3' },
+    { text: '183 - A*68:01 - DATYQRTRALVR - 0.857', value: '183_VDJdb_NP_InfluenzaA_A_6801_DATYQRTRALVR_score_1' },
     { text: '1983 - A*11:01 - IVTDFSVIK - 0.843', value: '1983_VDJdb_EBNA4_EBV_A_1101_IVTDFSVIK_score_1' },
+    { text: '21443 - A*24:02 - VYFFLPDHL - 0.835', value: '21443_VDJdb_gp100_HomoSapiens_A_2402_VYFFLPDHL_score_2' },
     { text: '4782 - A*11:01 - IVTDFSVIK - 0.823', value: '4782_VDJdb_EBNA4_EBV_A_1101_IVTDFSVIK_score_1' },
+    { text: '21383 - A*24:02 - LYPEFIASI - 0.815', value: '21383_VDJdb_DPY19L4_HomoSapiens_A_2402_LYPEFIASI_score_2' },
     { text: '21367 - A*02:01 - HMTEVVRHC - 0.803', value: '21367_VDJdb_p53_HomoSapiens_A_0201_HMTEVVRHC_score_3' },
     { text: '21375 - A*01:01 - KVDPIGHVY - 0.784', value: '21375_VDJdb_MAGEA6_HomoSapiens_A_0101_KVDPIGHVY_score_2' },
     { text: '14585 - A*03:01 - KLGGALQAK - 0.770', value: '14585_VDJdb_IE1_CMV_A_0301_KLGGALQAK_score_1' },
-    { text: '183 - A*68:01 - DATYQRTRALVR - 0.857', value: '183_VDJdb_NP_InfluenzaA_A_6801_DATYQRTRALVR_score_1' },
     { text: '182 - A*68:01 - DATYQRTRALVR - 0.742', value: '182_VDJdb_NP_InfluenzaA_A_6801_DATYQRTRALVR_score_1' }
   ],
   B: [
@@ -332,6 +454,15 @@ const representationOptions = [
   { title: 'Sphere', value: 'sphere' }
 ]
 
+// Chain-specific style options (includes global option)
+const chainRepresentationOptions = [
+  { title: 'Use Global Style', value: 'global' },
+  { title: 'Cartoon', value: 'cartoon' },
+  { title: 'Stick', value: 'stick' },
+  { title: 'Line', value: 'line' },
+  { title: 'Sphere', value: 'sphere' }
+]
+
 // Computed properties
 const structureInfo = computed(() => {
   const option = structureOptions.value.find(opt => opt.value === selectedStructureId.value)
@@ -340,7 +471,20 @@ const structureInfo = computed(() => {
 
 // Initialize viewer when component is mounted
 onMounted(async () => {
+  // Debug information
+  console.log('StructureViewerPage mounted with props:', props.viewerParams)
+  console.log('Positions from props:', props.viewerParams?.positions)
+  console.log('Has filtered positions:', hasFilteredPositions.value)
+  console.log('Selected positions:', selectedPositions.value)
+  
   await initializeViewer()
+  
+  // In filtered positions mode, automatically show all filtered positions
+  // This restores the previous behavior when coming from divergence calculation
+  if (hasFilteredPositions.value && selectedPositions.value.length > 0) {
+    console.log('Filtered positions mode detected, automatically highlighting filtered positions')
+    // The positions are already shown as chips and will be visualized via applyVisualizationSettings
+  }
 })
 
 // Clean up when component is unmounted
@@ -352,12 +496,20 @@ onBeforeUnmount(() => {
 })
 
 // Watch for representation changes and chain visibility
-watch([globalRepresentation, hlaRepresentation, chainVisibility, showHlaPositionsOverlay, highlightedPosition], async () => {
+watch([globalRepresentation, hlaRepresentation, chainVisibility, chainStyles, showHlaPositionsOverlay, highlightedPosition], async () => {
   console.log('Watcher triggered - applying visualization settings...')
   if (viewer.value) {
     await applyVisualizationSettings()
   }
 }, { deep: true })
+
+// Watch for position labels toggle
+watch(showPositionLabels, async () => {
+  console.log('Position labels toggle changed:', showPositionLabels.value)
+  if (viewer.value) {
+    await updatePositionLabels()
+  }
+})
 
 const initializeViewer = async () => {
   try {
@@ -432,6 +584,11 @@ const loadStructure = async (structureId) => {
     // Apply visualization settings
     await applyVisualizationSettings()
     
+    // Update position labels if enabled
+    if (showPositionLabels.value) {
+      await updatePositionLabels()
+    }
+    
     // Set default orientation for HLA structures (HLA domain at bottom, TCR on top)
     viewer.value.rotate(180, 'x')  // Flip vertically to put HLA domain at bottom
     
@@ -455,6 +612,7 @@ const applyVisualizationSettings = async () => {
   console.log('Applying visualization settings...')
   console.log('showHlaPositionsOverlay:', showHlaPositionsOverlay.value)
   console.log('selectedPositions:', selectedPositions.value)
+  console.log('manualHighlightedPositions:', manualHighlightedPositions.value)
   
   // Clear all existing styles first (correct way in 3Dmol.js)
   viewer.value.setStyle({}, {})
@@ -463,34 +621,61 @@ const applyVisualizationSettings = async () => {
   const stickRadius = 0.3
   const hlaChain = 'D'
   
+  // Different logic based on mode:
+  // - In filtered positions mode: only highlight the provided filtered positions  
+  // - In manual mode: only highlight manually added positions
+  let positionsToHighlight = []
+  
+  if (hasFilteredPositions.value) {
+    // Filtered positions mode: use provided positions
+    positionsToHighlight = selectedPositions.value || []
+  } else {
+    // Manual mode: use manually added positions
+    positionsToHighlight = manualHighlightedPositions.value || []
+  }
+  
   if (!showHlaPositionsOverlay.value) {
-    // Combined View: Global style + HLA positions in filtered style on top
-    console.log('Applying Combined View (global + filtered overlay)')
+    // Combined View: Individual or global style + HLA positions in filtered style on top
+    console.log('Applying Combined View (individual/global + filtered overlay)')
     
-    // Apply global styling to all visible chains (including HLA)
+    // Apply individual or global styling to all visible chains
     Object.keys(chainColors).forEach(chain => {
       if (chainVisibility.value[chain]) {
+        // Determine which representation to use for this chain
+        const chainRepresentation = chainStyles.value[chain] === 'global' 
+          ? globalRepresentation.value 
+          : chainStyles.value[chain]
+        
         const style = { color: chainColors[chain] }
-        if (globalRepresentation.value === 'stick') {
+        if (chainRepresentation === 'stick') {
           style.radius = stickRadius
+        } else if (chainRepresentation === 'sphere') {
+          style.radius = 1 // Uniform sphere size
         }
         viewer.value.setStyle(
           { chain: chain },
-          { [globalRepresentation.value]: style }
+          { [chainRepresentation]: style }
         )
       }
     })
     
     // Add HLA positions overlay in hlaRepresentation style if positions are selected
     // Using addStyle to layer on top of existing global style
-    if (selectedPositions.value && selectedPositions.value.length > 0 && chainVisibility.value[hlaChain]) {
-      selectedPositions.value.forEach(position => {
+    if (positionsToHighlight && positionsToHighlight.length > 0 && chainVisibility.value[hlaChain]) {
+      positionsToHighlight.forEach(position => {
         const posNum = parseInt(position)
         if (!isNaN(posNum)) {
           const isHighlighted = highlightedPosition.value === position
           const style = { 
-            color: isHighlighted ? 'cyan' : 'red',
-            radius: isHighlighted && hlaRepresentation.value === 'stick' ? 0.5 : 0.3
+            color: isHighlighted ? 'cyan' : 'red'
+          }
+          
+          // Set radius based on representation mode and highlight status
+          if (hlaRepresentation.value === 'stick') {
+            style.radius = isHighlighted ? 0.5 : 0.3
+          } else if (hlaRepresentation.value === 'sphere') {
+            // Uniform sphere size: 1 for all positions
+            style.radius = 1
           }
           
           viewer.value.addStyle(
@@ -502,43 +687,57 @@ const applyVisualizationSettings = async () => {
     }
     
   } else {
-    // Filtered Only View: Global style for all chains, but exclude selected HLA positions from global, show them only in filtered style
+    // Filtered Only View: Individual or global style for all chains
     console.log('Applying Filtered Only View')
     
-    // Apply global styling to all visible chains
+    // Apply individual or global styling to all visible chains
     Object.keys(chainColors).forEach(chain => {
       if (chainVisibility.value[chain]) {
+        // Determine which representation to use for this chain
+        const chainRepresentation = chainStyles.value[chain] === 'global' 
+          ? globalRepresentation.value 
+          : chainStyles.value[chain]
+        
         const style = { color: chainColors[chain] }
-        if (globalRepresentation.value === 'stick') {
+        if (chainRepresentation === 'stick') {
           style.radius = stickRadius
+        } else if (chainRepresentation === 'sphere') {
+          style.radius = 1 // Uniform sphere size
         }
         
-        if (chain === hlaChain && selectedPositions.value && selectedPositions.value.length > 0) {
-          // For HLA chain, apply global style to all residues (selected positions will be overridden later)
+        if (chain === hlaChain && positionsToHighlight && positionsToHighlight.length > 0) {
+          // For HLA chain, apply individual/global style to all residues (selected positions will be overridden later)
           viewer.value.setStyle(
             { chain: chain },
-            { [globalRepresentation.value]: style }
+            { [chainRepresentation]: style }
           )
           
         } else {
-          // Non-HLA chains or HLA when no positions selected - apply global style normally
+          // Non-HLA chains or HLA when no positions selected - apply individual/global style normally
           viewer.value.setStyle(
             { chain: chain },
-            { [globalRepresentation.value]: style }
+            { [chainRepresentation]: style }
           )
         }
       }
     })
     
     // Now apply filtered style to selected HLA positions only (will override the global style on these positions)
-    if (selectedPositions.value && selectedPositions.value.length > 0 && chainVisibility.value[hlaChain]) {
-      selectedPositions.value.forEach(position => {
+    if (positionsToHighlight && positionsToHighlight.length > 0 && chainVisibility.value[hlaChain]) {
+      positionsToHighlight.forEach(position => {
         const posNum = parseInt(position)
         if (!isNaN(posNum)) {
           const isHighlighted = highlightedPosition.value === position
           const style = { 
-            color: isHighlighted ? 'cyan' : 'red',
-            radius: isHighlighted && hlaRepresentation.value === 'stick' ? 0.5 : 0.3
+            color: isHighlighted ? 'cyan' : 'red'
+          }
+          
+          // Set radius based on representation mode and highlight status
+          if (hlaRepresentation.value === 'stick') {
+            style.radius = isHighlighted ? 0.5 : 0.3
+          } else if (hlaRepresentation.value === 'sphere') {
+            // Uniform sphere size: 1 for all positions
+            style.radius = 1
           }
           
           viewer.value.setStyle(
@@ -560,6 +759,46 @@ const togglePositionHighlight = (position) => {
   } else {
     // Sinon, sélectionner cette position
     highlightedPosition.value = position
+  }
+}
+
+// Functions for manual position highlighting
+const highlightManualPosition = () => {
+  const position = manualPositionInput.value.trim()
+  if (position && !manualHighlightedPositions.value.includes(position)) {
+    manualHighlightedPositions.value.push(position)
+    highlightedPosition.value = position // Also set as currently highlighted
+    manualPositionInput.value = '' // Clear input
+    
+    // Apply visualization immediately
+    if (viewer.value) {
+      applyVisualizationSettings()
+      // Update labels if enabled
+      if (showPositionLabels.value) {
+        updatePositionLabels()
+      }
+    }
+  }
+}
+
+const removeManualPosition = (position) => {
+  const index = manualHighlightedPositions.value.indexOf(position)
+  if (index > -1) {
+    manualHighlightedPositions.value.splice(index, 1)
+    
+    // If this was the highlighted position, clear it
+    if (highlightedPosition.value === position) {
+      highlightedPosition.value = null
+    }
+    
+    // Re-apply visualization
+    if (viewer.value) {
+      applyVisualizationSettings()
+      // Update labels if enabled
+      if (showPositionLabels.value) {
+        updatePositionLabels()
+      }
+    }
   }
 }
 
@@ -586,6 +825,108 @@ const resetView = () => {
 
 const goBack = () => {
   emit('back-to-analysis')
+}
+
+// Position labels management functions
+const updatePositionLabels = async () => {
+  if (!viewer.value) return
+
+  // Clear all existing labels first
+  clearPositionLabels()
+
+  if (showPositionLabels.value) {
+    // Add labels for current positions to highlight
+    let positionsToLabel = []
+    
+    if (hasFilteredPositions.value) {
+      // Filtered positions mode: use provided positions
+      positionsToLabel = selectedPositions.value || []
+    } else {
+      // Manual mode: use manually added positions
+      positionsToLabel = manualHighlightedPositions.value || []
+    }
+
+    console.log('Adding labels for positions:', positionsToLabel)
+    await addPositionLabels(positionsToLabel)
+  }
+
+  viewer.value.render()
+}
+
+const addPositionLabels = async (positions) => {
+  if (!viewer.value || !positions || positions.length === 0) return
+  
+  const hlaChain = 'D'
+  
+  // Only show labels if HLA chain is visible
+  if (!chainVisibility.value[hlaChain]) return
+
+  positions.forEach(position => {
+    const posNum = parseInt(position)
+    if (!isNaN(posNum)) {
+      try {
+        // Get CA atoms for this position in HLA chain
+        const atoms = viewer.value.getModel().selectedAtoms({
+          chain: hlaChain,
+          resi: posNum,
+          atom: 'CA'
+        })
+
+        if (atoms && atoms.length > 0) {
+          const atom = atoms[0] // Take the first CA atom for this residue
+          
+          // Add label at CA position
+          const label = viewer.value.addLabel(position.toString(), {
+            fontSize: 10,
+            fontColor: 'black',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            backgroundOpacity: 0.8,
+            borderThickness: 1,
+            borderColor: 'black',
+            inFront: true,
+            position: {
+              x: atom.x,
+              y: atom.y,
+              z: atom.z
+            }
+          })
+          
+          // Store the label reference
+          if (label) {
+            positionLabels.value.push({
+              position: position,
+              label: label,
+              atom: atom
+            })
+            console.log(`Added label for position ${position} at CA atom position`)
+          }
+        } else {
+          console.log(`No CA atom found for position ${position} in chain ${hlaChain}`)
+        }
+      } catch (error) {
+        console.error(`Error adding label for position ${position}:`, error)
+      }
+    }
+  })
+}
+
+const clearPositionLabels = () => {
+  if (!viewer.value) return
+
+  // Remove all labels from the viewer
+  positionLabels.value.forEach(labelInfo => {
+    if (labelInfo.label) {
+      try {
+        viewer.value.removeLabel(labelInfo.label)
+      } catch (error) {
+        console.error('Error removing label:', error)
+      }
+    }
+  })
+  
+  // Clear the labels array
+  positionLabels.value = []
+  console.log('All position labels cleared')
 }
 </script>
 
@@ -679,6 +1020,29 @@ const goBack = () => {
   align-items: center;
   justify-content: space-between;
   padding: 0.25rem 0;
+}
+
+.chain-item-extended {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.chain-item-extended:last-child {
+  border-bottom: none;
+}
+
+.chain-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chain-style-selector {
+  margin-top: 0.25rem;
+}
+
+.chain-style-select {
+  font-size: 0.8rem;
 }
 
 .chain-info {

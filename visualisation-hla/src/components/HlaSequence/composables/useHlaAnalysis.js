@@ -27,7 +27,7 @@ export function useHlaAnalysis() {
   const formParams = reactive({
     locus: 'A',
     distance: 3,
-    percentage: 20,
+    percentage: 50,
     interactionType: 'Peptide or TCR',
     allele1: '',
     allele2: '',

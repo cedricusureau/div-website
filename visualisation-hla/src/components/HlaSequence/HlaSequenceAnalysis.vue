@@ -21,6 +21,30 @@
             @update:formParams="wrappedUpdateParams"
             @position-clicked="handlePositionClickFromForm"
           />
+          
+          <!-- 3D Visualization Button - Outside form layout -->
+          <div class="mt-3 px-3">
+            <v-btn
+              @click="openStructureViewer"
+              variant="elevated"
+              color="primary"
+              block
+              class="visualize-3d-btn"
+              :disabled="filteredPositionsKeys.length === 0"
+              height="48"
+            >
+              <v-icon class="mr-2">mdi-cube-outline</v-icon>
+              <span class="font-weight-medium">Visualize in 3D</span>
+            </v-btn>
+            <v-fade-transition>
+              <div v-if="filteredPositionsKeys.length === 0" class="text-caption text-center text-grey mt-1">
+                No positions available for 3D visualization
+              </div>
+              <div v-else class="text-caption text-center text-grey mt-1">
+                {{ filteredPositionsKeys.length }} positions ready for visualization
+              </div>
+            </v-fade-transition>
+          </div>
         </v-col>
         
         <!-- Colonne contenu avec onglets -->
@@ -297,6 +321,37 @@ export default {
       });
     };
 
+    // Fonction pour ouvrir le visualiseur 3D
+    const openStructureViewer = () => {
+      // Utiliser toutes les positions filtrées disponibles, pas seulement les sélectionnées manuellement
+      // Cela restaure le comportement attendu de mise en valeur automatique des positions filtrées
+      const positionsToSend = filteredPositionsKeys.value.length > 0 
+        ? filteredPositionsKeys.value 
+        : currentSelectedPositions.value;
+      
+      // Debug information
+      console.log('Opening 3D viewer from Divergence Calculation:')
+      console.log('- filteredPositionsKeys:', filteredPositionsKeys.value)
+      console.log('- currentSelectedPositions:', currentSelectedPositions.value)
+      console.log('- positionsToSend:', positionsToSend)
+      
+      // Générer l'URL avec les paramètres actuels
+      const params = new URLSearchParams({
+        view: 'structureViewer',
+        locus: formParams.locus,
+        positions: positionsToSend.join(','),
+        distance: formParams.distance,
+        percentage: formParams.percentage,
+        interactionType: formParams.interactionType,
+        allele1: formParams.allele1 || '',
+        allele2: formParams.allele2 || '',
+        showPolymorphicOnly: formParams.showPolymorphicOnly,
+        entropyThreshold: formParams.entropyThreshold
+      });
+      
+      // Ouvrir dans un nouvel onglet
+      window.open(`${window.location.origin}?${params.toString()}`, '_blank');
+    };
 
     onMounted(() => {
       initializeData();
@@ -328,6 +383,7 @@ export default {
       handleBatchPositionSelection,
       handlePositionClickFromForm,
       handleAlleleChanged,
+      openStructureViewer,
       totalStructure,
       explorationSelectedPositions,
       batchSelectedPositions,
@@ -549,6 +605,45 @@ export default {
   
   .content-panel {
     padding: 12px;
+  }
+}
+
+/* 3D Visualization Button Styles */
+.visualize-3d-btn {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%) !important;
+}
+
+.visualize-3d-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.35) !important;
+  transform: translateY(-2px) !important;
+}
+
+.visualize-3d-btn:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.visualize-3d-btn:disabled {
+  opacity: 0.6;
+  background: #e0e0e0 !important;
+}
+
+.visualize-3d-btn .v-icon {
+  animation: rotate3d 3s linear infinite;
+}
+
+.visualize-3d-btn:hover:not(:disabled) .v-icon {
+  animation-duration: 1.5s;
+}
+
+@keyframes rotate3d {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(360deg);
   }
 }
 </style>

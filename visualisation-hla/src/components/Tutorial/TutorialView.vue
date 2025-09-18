@@ -85,6 +85,7 @@
                 <li>Filter positions based on interaction types (Peptide, TCR, or both)</li>
                 <li>Apply distance thresholds (2.0-7.5 Å) and frequency to select HLA positions based on your criteria</li>
                 <li>Visualize sequence positions and amino acid mismatches with comprehensive visualization of interactions</li>
+                <li>Explore filtered positions in interactive 3D molecular structures</li>
                 <li>Perform batch analysis on multiple allele pairs to calculate t-HED on your cohort</li>
                 <li>Browse the complete structures database with statistics</li>
               </ul>
@@ -201,21 +202,149 @@
                   <li><strong>Individual structures:</strong> Download specific PDB/model files</li>
                   <li><strong>Bulk download:</strong> ZIP archives of multiple structures</li>
                   <li><strong>Metadata CSV:</strong> Tabular data for spreadsheet analysis</li>
+                  <li><strong>3D Visualization:</strong> Click any structure to open it in the interactive 3D viewer</li>
                 </ul>
               </div>
 
             </div>
+            
+            <v-alert type="info" variant="tonal" class="my-4">
+              <strong>💡 Tip:</strong> Click on any structure entry in the database to open it in the interactive 
+              <a href="#" @click="scrollToSection('3d-viewer')" class="tutorial-link">3D Viewer</a> 
+              where you can explore the molecular structure, adjust visualization styles, and manually highlight specific positions.
+            </v-alert>
 
           </v-card-text>
         </v-card>
       </div>
 
-      <!-- Section 4: Parameters Guide -->
+      <!-- Section 4: 3D Viewer -->
       <div :id="'section-' + sections[3].id" class="tutorial-section">
         <v-card class="tutorial-card">
           <v-card-title class="section-title">
             <v-icon color="primary" class="mr-2">{{ sections[3].icon }}</v-icon>
             {{ sections[3].title }}
+          </v-card-title>
+          <v-card-text>
+            <p class="tutorial-text">
+              The 3D Viewer provides interactive visualization of HLA-TCR-peptide structures, allowing you to explore 
+              filtered positions and their spatial relationships in three-dimensional space.
+            </p>
+            
+            <div class="viewer-access">
+              <h3 class="subsection-title">🚀 Accessing the 3D Viewer</h3>
+              <p class="tutorial-text">
+                The 3D Viewer can be accessed in two ways:
+              </p>
+              <ul class="feature-list">
+                <li><strong>From Divergence Analysis:</strong> Click the "View in 3D" and highlight filtered positions</li>
+                <li><strong>From Structures Database:</strong> Click on any structure entry to open it in the 3D viewer</li>
+              </ul>
+              
+              <v-alert type="info" variant="tonal" class="my-4">
+                <strong>Two Modes Available:</strong>
+                <ul class="mt-2">
+                  <li><strong>Filtered Positions Mode:</strong> When accessed from analysis results, displays your filtered HLA positions</li>
+                  <li><strong>Manual Highlighting Mode:</strong> When accessed from database, allows manual position selection</li>
+                </ul>
+              </v-alert>
+            </div>
+            
+            <div class="viewer-features">
+              <h3 class="subsection-title">🎮 Interactive Controls</h3>
+              
+              <div class="control-section">
+                <h4>🏗️ Structure Selection</h4>
+                <p class="tutorial-text">
+                  Choose from high-quality structures organized by HLA locus, with confidence scores displayed for each option.
+                </p>
+              </div>
+              
+              <div class="control-section">
+                <h4>🎨 Visualization Styles</h4>
+                <ul class="feature-list">
+                  <li><strong>Global Style:</strong> Controls the representation for all chains (Cartoon, Stick, Line, Sphere)</li>
+                  <li><strong>Filtered Position Style:</strong> Special rendering for your selected HLA positions</li>
+                  <li><strong>Individual Chain Styles:</strong> Override global style for specific chains (TCR Alpha, TCR Beta, Peptide, HLA)</li>
+                </ul>
+                
+                <v-alert type="success" variant="tonal" class="my-4">
+                  <strong>Style Priority System:</strong>
+                  <ol class="mt-2">
+                    <li>Individual chain styles (highest priority)</li>
+                    <li>Global style (medium priority)</li>
+                    <li>Filtered position highlighting (always visible when enabled)</li>
+                  </ol>
+                </v-alert>
+              </div>
+              
+              <div class="control-section">
+                <h4>👁️ Display Options</h4>
+                <ul class="feature-list">
+                  <li><strong>HLA Positions Display:</strong> Toggle between "Combined View" (global + highlighted) and "Filtered Only"</li>
+                  <li><strong>Position Labels:</strong> Show/hide amino acid position numbers at carbon alpha atoms</li>
+                  <li><strong>Chain Visibility:</strong> Show/hide individual molecular components</li>
+                </ul>
+              </div>
+              
+              <div class="control-section">
+                <h4>🔍 Position Highlighting</h4>
+                <p class="tutorial-text">
+                  <strong>Filtered Positions Mode:</strong> Click on position chips to highlight specific residues in cyan.
+                </p>
+                <p class="tutorial-text">
+                  <strong>Manual Mode:</strong> Enter position numbers to add custom highlights and explore structure manually.
+                </p>
+              </div>
+            </div>
+            
+            <div class="chain-info">
+              <h3 class="subsection-title">🔗 Chain Color Coding</h3>
+              <div class="chain-legend">
+                <div class="chain-item-legend">
+                  <div class="color-dot-legend" style="background-color: blue;"></div>
+                  <span><strong>TCR Alpha Chain:</strong> T-cell receptor α chain</span>
+                </div>
+                <div class="chain-item-legend">
+                  <div class="color-dot-legend" style="background-color: green;"></div>
+                  <span><strong>TCR Beta Chain:</strong> T-cell receptor β chain</span>
+                </div>
+                <div class="chain-item-legend">
+                  <div class="color-dot-legend" style="background-color: orange;"></div>
+                  <span><strong>Peptide Chain:</strong> Presented peptide antigen</span>
+                </div>
+                <div class="chain-item-legend">
+                  <div class="color-dot-legend" style="background-color: purple;"></div>
+                  <span><strong>HLA Chain:</strong> MHC class I molecule (focus of analysis)</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="viewer-tips">
+              <h3 class="subsection-title">💡 Usage Tips</h3>
+              <ul class="feature-list">
+                <li><strong>Navigation:</strong> Left-click and drag to rotate, scroll to zoom, right-click and drag to pan</li>
+                <li><strong>Best Practices:</strong> Use "Cartoon" for overall structure, "Stick" for detailed interactions</li>
+                <li><strong>Performance:</strong> Hide unnecessary chains when focusing on specific interactions</li>
+                <li><strong>Analysis:</strong> Enable position labels when documenting specific residues</li>
+                <li><strong>Comparison:</strong> Switch between structures to compare binding sites across different complexes</li>
+              </ul>
+              
+              <v-alert type="warning" variant="tonal" class="my-4">
+                <strong>Remember:</strong> The 3D viewer helps visualize the spatial context of your filtered positions. 
+                Red highlights show all filtered positions, while cyan indicates the currently selected position for detailed examination.
+              </v-alert>
+            </div>
+          </v-card-text>
+        </v-card>
+      </div>
+
+      <!-- Section 5: Parameters Guide -->
+      <div :id="'section-' + sections[4].id" class="tutorial-section">
+        <v-card class="tutorial-card">
+          <v-card-title class="section-title">
+            <v-icon color="primary" class="mr-2">{{ sections[4].icon }}</v-icon>
+            {{ sections[4].title }}
           </v-card-title>
           <v-card-text>
             <div class="parameter-section">
@@ -287,12 +416,12 @@
         </v-card>
       </div>
 
-      <!-- Section 5: Divergence Analysis -->
-      <div :id="'section-' + sections[4].id" class="tutorial-section">
+      <!-- Section 6: Divergence Analysis -->
+      <div :id="'section-' + sections[5].id" class="tutorial-section">
         <v-card class="tutorial-card">
           <v-card-title class="section-title">
-            <v-icon color="primary" class="mr-2">{{ sections[4].icon }}</v-icon>
-            {{ sections[4].title }}
+            <v-icon color="primary" class="mr-2">{{ sections[5].icon }}</v-icon>
+            {{ sections[5].title }}
           </v-card-title>
           <v-card-text>
             <div class="divergence-section">
@@ -323,6 +452,13 @@
                   <li>Compare values within the same parameter set for meaningful results</li>
                 </ul>
               </v-alert>
+              
+              <v-alert type="success" variant="tonal" class="my-4">
+                <strong>🔬 3D Visualization:</strong> After calculating divergence scores, click the "View in 3D" button 
+                to explore your filtered positions in interactive molecular structures. See the 
+                <a href="#" @click="scrollToSection('3d-viewer')" class="tutorial-link">3D Viewer section</a> 
+                for detailed guidance on using the visualization tools.
+              </v-alert>
 
               <div class="grantham-section">
                 <h4>Grantham Score</h4>
@@ -339,12 +475,12 @@
         </v-card>
       </div>
 
-      <!-- Section 6: Workflow -->
-      <div :id="'section-' + sections[5].id" class="tutorial-section">
+      <!-- Section 7: Workflow -->
+      <div :id="'section-' + sections[6].id" class="tutorial-section">
         <v-card class="tutorial-card">
           <v-card-title class="section-title">
-            <v-icon color="primary" class="mr-2">{{ sections[5].icon }}</v-icon>
-            {{ sections[5].title }}
+            <v-icon color="primary" class="mr-2">{{ sections[6].icon }}</v-icon>
+            {{ sections[6].title }}
           </v-card-title>
           <v-card-text>
             <div class="workflow-section">
@@ -374,12 +510,12 @@
         </v-card>
       </div>
 
-      <!-- Section 7: Understanding CSV Results -->
-      <div :id="'section-' + sections[6].id" class="tutorial-section">
+      <!-- Section 8: Understanding CSV Results -->
+      <div :id="'section-' + sections[7].id" class="tutorial-section">
         <v-card class="tutorial-card">
           <v-card-title class="section-title">
-            <v-icon color="primary" class="mr-2">{{ sections[6].icon }}</v-icon>
-            {{ sections[6].title }}
+            <v-icon color="primary" class="mr-2">{{ sections[7].icon }}</v-icon>
+            {{ sections[7].title }}
           </v-card-title>
           <v-card-text>
             <div class="csv-section">
@@ -472,12 +608,12 @@
         </v-card>
       </div>
 
-      <!-- Section 8: Advanced Features -->
-      <div :id="'section-' + sections[7].id" class="tutorial-section">
+      <!-- Section 9: Advanced Features -->
+      <div :id="'section-' + sections[8].id" class="tutorial-section">
         <v-card class="tutorial-card">
           <v-card-title class="section-title">
-            <v-icon color="primary" class="mr-2">{{ sections[7].icon }}</v-icon>
-            {{ sections[7].title }}
+            <v-icon color="primary" class="mr-2">{{ sections[8].icon }}</v-icon>
+            {{ sections[8].title }}
           </v-card-title>
           <v-card-text>
             <div class="advanced-section">
@@ -573,6 +709,11 @@ export default {
           icon: 'mdi-database'
         },
         {
+          id: '3d-viewer',
+          title: '3D Viewer',
+          icon: 'mdi-cube-outline'
+        },
+        {
           id: 'parameters',
           title: 'Parameters Guide',
           icon: 'mdi-tune'
@@ -618,7 +759,7 @@ export default {
           description: 'Review the sequence visualization, mismatches, and divergence values.',
           icon: 'mdi-chart-bar',
           color: 'success',
-          tip: 'Red arrows show positions with amino acid differences'
+          tip: 'Red arrows show positions with amino acid differences - arrow length is proportional to Grantham score'
         },
         {
           title: 'Explore Interactions',
@@ -1148,6 +1289,53 @@ export default {
 .structures-tabs,
 .database-features {
   margin: 2rem 0;
+}
+
+/* Styles pour la section 3D Viewer */
+.viewer-access,
+.viewer-features,
+.chain-info,
+.viewer-tips {
+  margin: 2rem 0;
+}
+
+.control-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: rgba(76, 175, 80, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+.control-section h4 {
+  color: #2e7d32;
+  margin-bottom: 0.5rem;
+}
+
+.chain-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(156, 39, 176, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #9c27b0;
+}
+
+.chain-item-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.color-dot-legend {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
+  flex-shrink: 0;
 }
 
 .structures-tabs {

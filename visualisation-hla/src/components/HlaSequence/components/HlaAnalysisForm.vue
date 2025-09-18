@@ -144,38 +144,22 @@
           </v-col>
         </v-row>
         
-        <!-- Boutons d'actions rapides -->
-        <v-row dense class="mt-2">
-          <v-col cols="8">
-            <v-btn
-              @click="openStructureViewer"
-              variant="outlined"
-              size="small"
-              color="primary"
-              class="visualize-btn"
-              :disabled="filteredPositions.length === 0"
-            >
-              <v-icon size="small">mdi-molecule</v-icon>
-              Visualize 3D
-            </v-btn>
-          </v-col>
-          <v-col cols="4" class="text-right">
-            <v-btn
-              @click="resetToDefaults"
-              variant="text"
-              size="small"
-              color="grey"
-              class="reset-btn"
-            >
-              <v-icon size="small">mdi-restore</v-icon>
-              Reset
-            </v-btn>
-          </v-col>
-        </v-row>
+        <!-- Reset button (small, top right) -->
+        <div class="text-right mt-2">
+          <v-btn
+            @click="resetToDefaults"
+            variant="text"
+            size="small"
+            color="grey"
+            class="reset-btn"
+          >
+            <v-icon size="small">mdi-restore</v-icon>
+            Reset
+          </v-btn>
+        </div>
         
       </v-card-text>
     </v-card>
-
 
     <v-expansion-panels variant="accordion" class="mt-0 mb-3">
       <v-expansion-panel class="advanced-filters-panel">
@@ -248,7 +232,7 @@ export default {
       default: () => ({
         locus: 'A',
         distance: 3,
-        percentage: 20,
+        percentage: 50,
         interactionType: 'Peptide or TCR',
         allele1: '',
         allele2: '',
@@ -293,7 +277,7 @@ export default {
       const defaultParams = {
         locus: 'A',
         distance: 3,
-        percentage: 20,
+        percentage: 50,
         interactionType: 'Peptide or TCR',
         allele1: '',
         allele2: '',
