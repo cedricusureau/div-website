@@ -297,58 +297,48 @@
     </div>
     </div>
     
-    <!-- Interactions Details (Sankey Diagram) -->
-    <div class="interactions-section" v-if="positions && Object.keys(positions).length > 0" ref="accordionSection">
-      <div class="interactions-header">
-        <div class="interactions-title-row clickable-header" @click="togglePeptideInteractions">
-          <span class="interactions-title">Interactions Details (Sankey Diagram)</span>
-          <span class="interactions-icon">{{ showPeptideInteractions ? '▲' : '▼' }}</span>
-        </div>
-        
-        <!-- Section positions toujours visible -->
-        <div class="positions-selector-section">
-          <div class="positions-selector-header">
-            <span class="position-icon">👁️</span>
-            <span class="selector-text">Watch interaction details for selected positions</span>
-            <span class="selection-count">
-              {{ selectedPositions.length }} / {{ Object.keys(positions).length }} selected
-            </span>
-          </div>
-          
-          <div class="positions-chips">
-            <button
-              v-for="position in Object.keys(positions).sort((a, b) => Number(a) - Number(b))"
-              :key="position"
-              :class="['position-chip', { 'selected': selectedPositions.includes(position) }]"
-              @click="handleClick(parseInt(position))"
-            >
-              {{ position }}
-            </button>
-          </div>
-        </div>
+    <!-- Position Analysis Section -->
+    <div v-if="selectedPositions.length > 0" class="analysis-section" ref="analysisSection">
+      <div class="section-header">
+        <h2>Position {{ selectedPositions[0] }}:{{ currentLocus }} - Interactions & Distance Analysis</h2>
       </div>
-      
-      <transition name="slide">
-        <div v-if="showPeptideInteractions" class="interactions-content">
-          <PeptideInteractionsSankey 
-            :filteredContactData="filteredContactData"
-            :selectedPositions="selectedPositionsForSankey"
-            :totalStructures="totalStructure"
-            @position-clicked="handleClick"
-          />
-        </div>
-      </transition>
+
+      <!-- Sankey Diagram -->
+      <div class="sankey-subsection">
+        <h3>Peptide/TCR Interactions</h3>
+        <PeptideInteractionsSankey
+          :filteredContactData="filteredContactData"
+          :selectedPositions="selectedPositions"
+          :totalStructures="totalStructure"
+        />
+      </div>
+
+      <!-- Distance Analysis -->
+      <div class="distance-subsection">
+        <h3>Distance Distributions</h3>
+        <PositionDistanceCharts
+          :locus="currentLocus"
+          :position="parseInt(selectedPositions[0])"
+        />
+      </div>
+    </div>
+
+    <!-- No Selection Message -->
+    <div v-else-if="positions && Object.keys(positions).length > 0" class="no-selection-message">
+      <p>👆 Cliquez sur une position dans la frise pour analyser ses interactions et distances</p>
     </div>
   </div>
 </template>
 
 <script>
 import PeptideInteractionsSankey from './PeptideInteractionsSankey.vue';
+import PositionDistanceCharts from './PositionDistanceCharts.vue';
 
 export default {
   name: 'SequenceVisualization',
   components: {
-    PeptideInteractionsSankey
+    PeptideInteractionsSankey,
+    PositionDistanceCharts
   },
   props: {
     positions: {
@@ -388,7 +378,6 @@ export default {
     return {
       hoveredPosition: null,
       hoveredMismatch: null,
-      showPeptideInteractions: false,
       colorMap: {
         'Peptide': '#FF6B6B',
         'TCR': '#4ECDC4',
@@ -412,13 +401,6 @@ export default {
     selectedPositionsList() {
       return this.positions ? Object.keys(this.positions) : [];
     },
-    selectedPositionsForSankey() {
-      console.log("filteredContactData length:", this.filteredContactData.length);
-      // MODIFICATION : Utiliser this.selectedPositions (prop) au lieu de this.selectedPositions (data)
-      return this.selectedPositions.length > 0 
-        ? this.selectedPositions 
-        : (this.positions ? Object.keys(this.positions) : []);
-    },
     filteredAlleles1() {
       if (!this.allele1Input || this.allele1Input.length < 1) {
         return this.allelesList.slice(0, 10);
@@ -439,11 +421,10 @@ export default {
   watch: {
     selectedPositions: {
       handler(newSelectedPositions) {
-        // Ouvrir automatiquement l'accordéon si des positions sont sélectionnées
-        if (newSelectedPositions && newSelectedPositions.length > 0 && !this.showPeptideInteractions) {
-          this.showPeptideInteractions = true;
+        // Scroll vers la section d'analyse si une position est sélectionnée
+        if (newSelectedPositions && newSelectedPositions.length > 0) {
           this.$nextTick(() => {
-            this.scrollToAccordion();
+            this.scrollToAnalysis();
           });
         }
       },
@@ -471,44 +452,27 @@ export default {
     },
     handleClick(position) {
       console.log('🎭 Sequence position clicked:', position);
-      
-      // MODIFICATION : Utiliser this.selectedPositions (prop) au lieu de this.selectedPositions (data)
+
       const positionStr = String(position);
-      const index = this.selectedPositions.indexOf(positionStr);
-      
-      let newSelection;
-      if (index !== -1) {
-        // Position déjà sélectionnée, la retirer
-        newSelection = [...this.selectedPositions];
-        newSelection.splice(index, 1);
+
+      // Sélection unique : si déjà sélectionnée → désélectionner, sinon → sélectionner uniquement celle-ci
+      if (this.selectedPositions.length === 1 && this.selectedPositions[0] === positionStr) {
+        // Désélectionner
+        this.$emit('positions-selected', []);
       } else {
-        // Position non sélectionnée, l'ajouter
-        newSelection = [...this.selectedPositions, positionStr];
+        // Sélectionner uniquement cette position
+        this.$emit('positions-selected', [positionStr]);
       }
-      
-      console.log('🎭 Emitting positions-selected:', newSelection);
-      // MODIFICATION : Émettre le nouveau tableau au lieu de le stocker localement
-      this.$emit('positions-selected', newSelection);
     },
     
-    // ... toutes vos autres méthodes restent identiques ...
-    togglePeptideInteractions() {
-      this.showPeptideInteractions = !this.showPeptideInteractions;
-      
-      if (this.showPeptideInteractions) {
-        this.$nextTick(() => {
-          this.scrollToAccordion();
-        });
-      }
-    },
-    scrollToAccordion() {
+    scrollToAnalysis() {
       setTimeout(() => {
-        if (this.$refs.accordionSection) {
-          const element = this.$refs.accordionSection;
+        if (this.$refs.analysisSection) {
+          const element = this.$refs.analysisSection;
           const elementRect = element.getBoundingClientRect();
           const absoluteElementTop = elementRect.top + window.pageYOffset;
           const middle = absoluteElementTop - (window.innerHeight / 4);
-          
+
           window.scrollTo({
             top: middle,
             behavior: 'smooth'
@@ -832,7 +796,7 @@ svg {
 
 /* Styles pour les wrappers harmonisés */
 .visualization-section,
-.interactions-section {
+.analysis-section {
   background: rgba(248, 249, 250, 0.8);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -842,146 +806,48 @@ svg {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.interactions-header {
-  padding: 8px 0;
+/* No selection message */
+.no-selection-message {
+  padding: 60px 20px;
+  text-align: center;
+  font-size: 18px;
+  color: #666;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  margin: 20px 0;
 }
 
-.interactions-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid rgba(224, 224, 224, 0.3);
-  margin-bottom: 12px;
-  transition: all 0.2s ease;
+.no-selection-message p {
+  margin: 0;
 }
 
-.clickable-header:hover {
-  background: rgba(74, 144, 226, 0.1);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin: 0 -12px 12px -12px;
+/* Section header */
+.section-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 24px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e0e0;
 }
 
-.clickable-header:hover .interactions-title {
-  color: #4a90e2;
+/* Subsections */
+.sankey-subsection {
+  margin-bottom: 32px;
 }
 
-.clickable-header:hover .interactions-icon {
-  color: #2d5aa0;
-  transform: scale(1.1);
+.distance-subsection {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 2px solid #e0e0e0;
 }
 
-.interactions-title {
+.sankey-subsection h3,
+.distance-subsection h3 {
   font-size: 18px;
   font-weight: 600;
   color: #2c3e50;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.interactions-title::before {
-  content: "📊";
-  font-size: 16px;
-}
-
-.interactions-icon {
-  font-size: 16px;
-  color: #4a90e2;
-  font-weight: bold;
-  transition: transform 0.2s ease;
-}
-
-.interactions-content {
-  padding-top: 8px;
-}
-
-/* Animation de transition pour l'accordéon */
-.slide-enter-active, .slide-leave-active {
-  transition: max-height 0.3s ease-out;
-  max-height: 1000px;
-  overflow: hidden;
-}
-
-.slide-enter-from, .slide-leave-to {
-  max-height: 0;
-  overflow: hidden;
-}
-
-/* Styles pour la sélection de positions dans l'accordéon Sankey */
-.positions-selector-section {
-  margin-top: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  border: 1px solid rgba(224, 224, 224, 0.3);
-}
-
-.positions-selector-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #2c3e50;
-}
-
-.position-icon {
-  font-size: 16px;
-}
-
-.selector-text {
-  flex: 1;
-  font-weight: 500;
-}
-
-.selection-count {
-  font-size: 12px;
-  color: #666;
-  background: rgba(74, 144, 226, 0.1);
-  padding: 2px 8px;
-  border-radius: 12px;
-  border: 1px solid rgba(74, 144, 226, 0.3);
-}
-
-.positions-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.positions-chips .position-chip {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 16px;
-  padding: 4px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #666;
-  min-width: 32px;
-  text-align: center;
-}
-
-.positions-chips .position-chip:hover {
-  border-color: #4a90e2;
-  background: rgba(74, 144, 226, 0.05);
-  transform: translateY(-1px);
-}
-
-.positions-chips .position-chip.selected {
-  background: #4a90e2;
-  border-color: #4a90e2;
-  color: white;
-  font-weight: 600;
-}
-
-.positions-chips .position-chip.selected:hover {
-  background: #2d5aa0;
-  border-color: #2d5aa0;
+  margin: 0 0 20px 0;
 }
 
 /* Styles pour la section de comparaison d'allèles */
