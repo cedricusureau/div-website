@@ -71,26 +71,19 @@ export class PositionDistancesService {
     const db = await this.loadDatabase(locus);
 
     try {
-      const result = db.exec(
-        'SELECT min_distance, aa, target, structure_id, allele FROM distances WHERE position = ?',
-        [position]
-      );
+      // Utiliser paramètres nommés avec sql.js
+      const stmt = db.prepare('SELECT min_distance, aa, target, structure_id, allele FROM distances WHERE position = $position');
+      stmt.bind({ $position: position });
 
-      if (!result || result.length === 0) {
-        return [];
+      const results = [];
+      while (stmt.step()) {
+        const row = stmt.getAsObject();
+        results.push(row);
       }
+      stmt.free();
 
-      // Convertir en array d'objets
-      const columns = result[0].columns;
-      const values = result[0].values;
-
-      return values.map(row => {
-        const obj = {};
-        columns.forEach((col, idx) => {
-          obj[col] = row[idx];
-        });
-        return obj;
-      });
+      console.log(`Position ${position}:${locus} - ${results.length} résultats trouvés`);
+      return results;
     } catch (error) {
       console.error(`Erreur requête position ${position}:${locus}:`, error);
       return [];
