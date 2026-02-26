@@ -46,6 +46,10 @@
           <v-icon left small class="mr-2">mdi-school</v-icon>
           Tutorial
         </v-tab>
+        <v-tab value="positionDistances" class="nav-tab">
+          <v-icon left small class="mr-2">mdi-chart-bell-curve</v-icon>
+          Position Distances
+        </v-tab>
       </v-tabs>
     </v-app-bar>
 
@@ -86,6 +90,10 @@
             @back-to-analysis="currentView = 'sequence'"
           />
         </section>
+
+        <section v-if="currentView === 'positionDistances'" aria-label="Position Distance Explorer">
+          <PositionDistancesView />
+        </section>
       </main>
     </v-main>
   </v-app>
@@ -100,6 +108,7 @@ import StatisticsView from './components/Statistics/StatisticsView.vue'
 import TutorialView from './components/Tutorial/TutorialView.vue'
 import BatchAnalysis from './components/HlaSequence/components/BatchAnalysis.vue'
 import StructureViewerPage from './components/StructureViewer/StructureViewerPage.vue'
+import PositionDistancesView from './components/PositionDistances/PositionDistancesView.vue'
 
 export default {
   name: 'App',
@@ -110,7 +119,8 @@ export default {
     StatisticsView,
     TutorialView,
     BatchAnalysis,
-    StructureViewerPage
+    StructureViewerPage,
+    PositionDistancesView
   },
   setup() {
   const currentView = ref('home');
