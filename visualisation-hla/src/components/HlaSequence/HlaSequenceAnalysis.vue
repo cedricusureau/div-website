@@ -120,6 +120,7 @@
 <script>
 import { onMounted, ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useHlaAnalysis } from './composables/useHlaAnalysis';
+import { positionDistancesService } from '../../services/positionDistancesService';
 import HlaAnalysisForm from './components/HlaAnalysisForm.vue';
 import SequenceVisualization from './components/SequenceVisualization.vue';
 import BatchAnalysis from './components/BatchAnalysis.vue';
@@ -361,8 +362,9 @@ export default {
       window.open(`${window.location.origin}?${params.toString()}`, '_blank');
     };
 
-    onMounted(() => {
-      initializeData();
+    onMounted(async () => {
+      await initializeData();
+      await positionDistancesService.init();
     });
     
     // Nettoyer le timeout en cas de démontage du composant
