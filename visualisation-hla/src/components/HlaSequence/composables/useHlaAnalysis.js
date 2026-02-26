@@ -12,6 +12,7 @@ export function useHlaAnalysis() {
     A: {},
     B: {}
   });
+  const contactData = shallowRef([]); // Données de contact pour le Sankey diagram
 
   // Utiliser ref normal pour les valeurs primitives ou les objets qui changent souvent
   const alleleSpecificPositionsResult = ref(null);
@@ -29,7 +30,8 @@ export function useHlaAnalysis() {
     quantile: 0.7,
     allele1: '',
     allele2: '',
-    showPolymorphicOnly: true
+    showPolymorphicOnly: true,
+    heterozygosityThreshold: 5
   });
 
   async function initializeData() {
@@ -43,6 +45,10 @@ export function useHlaAnalysis() {
       // Charger les données de polymorphisme
       const polymorphismDataResult = await PolymorphismService.loadPolymorphismData();
       polymorphismData.value = polymorphismDataResult;
+
+      // Charger les données de contact pour le Sankey diagram
+      const contactDataResult = await HlaService.loadContactData();
+      contactData.value = contactDataResult;
 
       await calculatePositions();
     } catch (err) {
@@ -70,7 +76,8 @@ export function useHlaAnalysis() {
         formParams.allele2,
         aCsvData.value,
         bCsvData.value,
-        null // visiblePositions pour calcul tHed (sera ajouté plus tard si nécessaire)
+        null, // visiblePositions pour calcul tHed (sera ajouté plus tard si nécessaire)
+        formParams.heterozygosityThreshold
       );
 
       // Les positions sont déjà filtrées selon showPolymorphicOnly
@@ -120,6 +127,6 @@ export function useHlaAnalysis() {
     totalStructure,
     polymorphismData,
     rawPositions,
-    filteredContactData: shallowRef([]) // Deprecated - kept for backward compatibility
+    contactData // Données de contact brutes pour le Sankey diagram
   };
 }

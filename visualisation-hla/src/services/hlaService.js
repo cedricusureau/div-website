@@ -8,7 +8,8 @@ export class HlaService {
    static cache = {
     A: null,
     B: null,
-    lastFetch: null
+    lastFetch: null,
+    contactData: null
   };
 
   // Durée de validité du cache (par exemple, 1 heure)
@@ -103,9 +104,52 @@ export class HlaService {
     this.cache = {
       A: null,
       B: null,
-      lastFetch: null
+      lastFetch: null,
+      contactData: null
     };
     return this.loadData();
+  }
+
+  /**
+   * Charge les données de contact peptide/MHC depuis le fichier CSV
+   * @returns {Promise<Array>} Données de contact
+   */
+  static async loadContactData() {
+    // Utiliser le cache si disponible
+    if (this.cache.contactData) {
+      console.log('Utilisation des données de contact en cache');
+      return this.cache.contactData;
+    }
+
+    try {
+      const response = await fetch('/data/mhc_contact_peptides.csv');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const csvText = await response.text();
+
+      return new Promise((resolve) => {
+        Papa.parse(csvText, {
+          header: true,
+          delimiter: ';',
+          dynamicTyping: false, // Garder tout en string pour éviter les problèmes de typage
+          skipEmptyLines: true,
+          complete: (results) => {
+            // Mettre en cache
+            this.cache.contactData = results.data;
+            console.log(`Données de contact chargées: ${results.data.length} lignes`);
+            resolve(results.data);
+          },
+          error: (error) => {
+            console.error('Erreur de parsing CSV:', error);
+            resolve([]);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Erreur de chargement des données de contact:', error);
+      return [];
+    }
   }
   
   /**
@@ -120,6 +164,7 @@ export class HlaService {
    * @param {Array} aCsv - Données de séquences HLA-A
    * @param {Array} bCsv - Données de séquences HLA-B
    * @param {Object} visiblePositions - Positions visibles (pour calcul tHed)
+   * @param {number} heterozygosityThreshold - Seuil d'hétérozygotie en % (0-100)
    * @returns {Object}
    */
   static getPatchPosition(
@@ -132,13 +177,16 @@ export class HlaService {
     allele2 = null,
     aCsv,
     bCsv,
-    visiblePositions = null
+    visiblePositions = null,
+    heterozygosityThreshold = 5
   ) {
 
-    // Récupérer les positions pré-calculées depuis le lookup
+    // Récupérer les positions pour tous les modes nécessaires
+    const peptideResult = ContactFrequencyService.getPositions('peptide', distance, quantile);
+    const tcrResult = ContactFrequencyService.getPositions('tcr', distance, quantile);
     const lookupResult = ContactFrequencyService.getPositions(mode, distance, quantile);
 
-    if (!lookupResult) {
+    if (!peptideResult || !tcrResult || !lookupResult) {
       console.error('Could not retrieve positions from contact frequency lookup');
       return {
         positionWeighted: {},
@@ -152,17 +200,30 @@ export class HlaService {
 
     // Récupérer les positions selon le locus
     const positions = locus === 'A' ? lookupResult.positions_A : lookupResult.positions_B;
+    const peptidePositions = locus === 'A' ? peptideResult.positions_A : peptideResult.positions_B;
+    const tcrPositions = locus === 'A' ? tcrResult.positions_A : tcrResult.positions_B;
 
-    // Créer le dictionnaire de positions (toutes marquées comme mode)
+    // Convertir en Sets pour faciliter les comparaisons
+    const peptideSet = new Set(peptidePositions);
+    const tcrSet = new Set(tcrPositions);
+
+    // Créer le dictionnaire de positions avec types appropriés
     let positionWeighted = {};
     positions.forEach(position => {
-      // Déterminer le type selon le mode
-      if (mode === 'either') {
-        positionWeighted[position] = 'Peptide or TCR';
-      } else if (mode === 'tcr') {
-        positionWeighted[position] = 'TCR';
-      } else if (mode === 'peptide') {
+      const inPeptide = peptideSet.has(position);
+      const inTcr = tcrSet.has(position);
+
+      if (inPeptide && inTcr) {
+        positionWeighted[position] = 'Peptide + TCR';
+      } else if (inPeptide) {
         positionWeighted[position] = 'Peptide';
+      } else if (inTcr) {
+        positionWeighted[position] = 'TCR';
+      } else {
+        // Position dans le mode sélectionné mais pas dans peptide ou tcr individuellement
+        // Assigner un type par défaut selon le mode
+        positionWeighted[position] = mode === 'either' ? 'Peptide + TCR' :
+                                      mode === 'peptide' ? 'Peptide' : 'TCR';
       }
     });
 
@@ -171,7 +232,7 @@ export class HlaService {
       positionWeighted = PolymorphismService.filterByPolymorphism(
         positionWeighted,
         locus,
-        0, // threshold (non utilisé en mode polymorphicOnly)
+        heterozygosityThreshold, // seuil d'hétérozygotie en %
         true // polymorphicOnly
       );
     }
@@ -215,13 +276,16 @@ export class HlaService {
       }
     }
 
+    // Nombre de structures par locus (basé sur curated_metadata.csv)
+    const totalStructures = locus === 'A' ? 239 : 193;
+
     return {
       positionWeighted,
       alleleSpecificPositions,
       cHed,
       tHed,
       filteredData: [], // Plus utilisé avec le nouveau système
-      totalStructures: 432 // Nombre fixe de structures curées
+      totalStructures // 239 pour locus A, 193 pour locus B
     };
   }
 

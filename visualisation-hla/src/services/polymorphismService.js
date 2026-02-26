@@ -131,29 +131,24 @@ export class PolymorphismService {
       return positions
     }
 
+    // Si le filtre n'est pas activé, retourner toutes les positions
+    if (!polymorphicOnly) {
+      return positions
+    }
+
+    // Si le filtre est activé, filtrer par seuil d'hétérozygotie
     const filtered = {}
     Object.entries(positions).forEach(([position, value]) => {
       const polyData = polymorphismData[position]
 
       if (!polyData) {
-        // Si pas de données de polymorphisme, inclure la position
-        if (!polymorphicOnly) {
-          filtered[position] = value
-        }
+        // Si pas de données de polymorphisme, ne pas inclure la position
         return
       }
 
-      // Filtrer selon le seuil et le flag polymorphicOnly
-      if (polymorphicOnly) {
-        // Ne garder que les positions marquées comme sélectionnées (polymorphiques)
-        if (polyData.selected) {
-          filtered[position] = value
-        }
-      } else {
-        // Utiliser le seuil d'hétérozygosité
-        if (polyData.heterozygosity >= threshold) {
-          filtered[position] = value
-        }
+      // Garder uniquement les positions avec hétérozygosité >= threshold
+      if (polyData.heterozygosity >= threshold) {
+        filtered[position] = value
       }
     })
 

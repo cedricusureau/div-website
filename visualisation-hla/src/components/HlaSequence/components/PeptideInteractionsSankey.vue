@@ -123,52 +123,52 @@ export default {
         if (!pepString || typeof pepString !== 'string') {
           return null;
         }
-        
+
         // Nettoyer la chaîne
         const cleanString = pepString.trim();
         if (cleanString === '') {
           return null;
         }
-        
+
         // Format: texte_NOMBRE (comme LYS_1)
         const underscoreMatch = cleanString.match(/.*_(\d+)$/);
         if (underscoreMatch && underscoreMatch[1]) {
           const position = parseInt(underscoreMatch[1], 10);
-          // Filtrer les positions > 15
-          if (position > 15) {
+          // Ignorer les positions aberrantes (> 20)
+          if (position > 20) {
             return null;
           }
           return `P${position}`;
         }
-        
+
         // Format: texte suivi d'un nombre à la fin
         const numberMatch = cleanString.match(/(\d+)$/);
         if (numberMatch && numberMatch[1]) {
           const position = parseInt(numberMatch[1], 10);
-          // Filtrer les positions > 15
-          if (position > 15) {
+          // Ignorer les positions aberrantes (> 20)
+          if (position > 20) {
             return null;
           }
           return `P${position}`;
         }
-        
+
         // Format: contient un nombre n'importe où
         const anyNumberMatch = cleanString.match(/(\d+)/);
         if (anyNumberMatch && anyNumberMatch[1]) {
           const position = parseInt(anyNumberMatch[1], 10);
-          // Filtrer les positions > 15
-          if (position > 15) {
+          // Ignorer les positions aberrantes (> 20)
+          if (position > 20) {
             return null;
           }
           return `P${position}`;
         }
-        
+
         // Si la chaîne contient un code d'acide aminé à trois lettres, essayer de l'extraire
         const aminoAcidMatch = cleanString.match(/(ALA|ARG|ASN|ASP|CYS|GLN|GLU|GLY|HIS|ILE|LEU|LYS|MET|PHE|PRO|SER|THR|TRP|TYR|VAL)/i);
         if (aminoAcidMatch && aminoAcidMatch[1]) {
           return `P-${aminoAcidMatch[1].toUpperCase()}`;
         }
-        
+
         // Si on ne peut pas extraire une position significative, retourner null
         return null;
       };

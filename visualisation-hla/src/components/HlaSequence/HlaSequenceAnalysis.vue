@@ -146,7 +146,7 @@ export default {
       alleleSpecificPositionsResult,
       cHed,
       tHed,
-      filteredContactData,
+      contactData,
       totalStructure,
       rawPositions
     } = useHlaAnalysis();
@@ -174,16 +174,16 @@ export default {
     };
 
     // Watchers optimisés séparés par type de paramètre
-    
+
     // Watcher pour les paramètres qui nécessitent un recalcul complet (debounced)
     watch(
-      () => [formParams.locus, formParams.distance, formParams.percentage, formParams.interactionType],
+      () => [formParams.locus, formParams.distance, formParams.quantile, formParams.mode],
       () => {
         // Annuler tout calcul précédent en attente
         if (debouncedCalculation.value) {
           clearTimeout(debouncedCalculation.value);
         }
-        
+
         // Définir un nouveau timeout pour le calcul (400ms pour les opérations lourdes)
         debouncedCalculation.value = setTimeout(() => {
           calculatePositions();
@@ -191,13 +191,13 @@ export default {
         }, 400);
       }
     );
-    
-    // Watcher pour les paramètres qui ne nécessitent qu'une mise à jour du filtrage (plus rapide)
+
+    // Watcher pour les paramètres de filtrage polymorphique (recalcul immédiat)
     watch(
-      () => [formParams.showPolymorphicOnly, formParams.entropyThreshold],
+      () => [formParams.showPolymorphicOnly, formParams.heterozygosityThreshold],
       () => {
-        // Mise à jour immédiate du filtrage sans debounce
-        originalUpdateParams(formParams);
+        // Recalculer immédiatement pour appliquer le filtre polymorphique
+        calculatePositions();
       }
     );
     
@@ -227,8 +227,8 @@ export default {
     const analysisParamsComputed = computed(() => ({
       locus: formParams.locus,
       distance: formParams.distance,
-      percentage: formParams.percentage,
-      interactionType: formParams.interactionType,
+      quantile: formParams.quantile,
+      mode: formParams.mode,
       positions: positions.value,
       aCsv: aCsvData.value,
       bCsv: bCsvData.value
@@ -248,13 +248,21 @@ export default {
         : batchSelectedPositionsSet.value;
     });
 
+    // Computed property pour filtrer les données par locus d'abord
+    const filteredContactDataByLocus = computed(() => {
+      const currentLocus = formParams.locus;
+      return contactData.value.filter(contact => contact.Locus === currentLocus);
+    });
+
     // Computed property pour filtrer les données en fonction des positions sélectionnées (optimisé avec Set)
     const filteredContactDataByPositions = computed(() => {
+      const dataByLocus = filteredContactDataByLocus.value;
+
       if (currentSelectedPositions.value.length === 0) {
-        return filteredContactData.value;
+        return dataByLocus;
       }
       const selectedSet = currentSelectedPositionsSet.value;
-      return filteredContactData.value.filter(contact =>
+      return dataByLocus.filter(contact =>
         selectedSet.has(String(contact.ResidueID))
       );
     });
@@ -341,12 +349,12 @@ export default {
         locus: formParams.locus,
         positions: positionsToSend.join(','),
         distance: formParams.distance,
-        percentage: formParams.percentage,
-        interactionType: formParams.interactionType,
+        quantile: formParams.quantile,
+        mode: formParams.mode,
         allele1: formParams.allele1 || '',
         allele2: formParams.allele2 || '',
         showPolymorphicOnly: formParams.showPolymorphicOnly,
-        entropyThreshold: formParams.entropyThreshold
+        heterozygosityThreshold: formParams.heterozygosityThreshold
       });
       
       // Ouvrir dans un nouvel onglet

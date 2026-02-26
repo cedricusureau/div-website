@@ -321,9 +321,10 @@
 
 <script setup>
 /* eslint-env node */
-/* global defineProps, defineEmits, $3Dmol */
+/* global defineProps, defineEmits */
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-// import * as $3Dmol from '3dmol' // Temporarily disabled
+import * as $3Dmol from '3dmol'
+import { loadStructuresData } from '@/services/hlaStructuresService'
 
 const props = defineProps({
   viewerParams: {
@@ -352,19 +353,20 @@ const positionLabels = ref([])
 // Manual position highlighting (when no positions from props)
 const manualPositionInput = ref('')
 const manualHighlightedPositions = ref([])
-// Default structure based on locus - best scores
+// Default structure based on locus - best scores from curated dataset
 const getDefaultStructureForLocus = (locus) => {
   if (locus === 'B') {
-    return '21662_VDJdb_EBNA1_EBV_B_3501_HPVGEADYFEY_score_3' // Best B structure (0.913)
+    return '6939_VDJdb_TAFTIPSI_B5101_score_1' // Best B structure (0.933)
   }
-  return '21460_VDJdb_gp100_HomoSapiens_A_0201_YLEPGPVTA_score_3' // Best A structure (0.881)
+  return '79017_VDJdb_RQFGPDFPTI_A0201_score_3' // Best A structure (0.94)
 }
 
 const selectedStructureId = ref(
-  props.viewerParams?.structureId || 
+  props.viewerParams?.structureId ||
   getDefaultStructureForLocus(props.viewerParams?.locus || 'A')
 )
 const structureData = ref(null)
+const structuresMetadata = ref([]) // Métadonnées de toutes les structures
 
 // Get parameters from props or defaults
 // eslint-disable-next-line no-unused-vars
@@ -413,31 +415,27 @@ const chainStyles = ref({
   'D': 'global'
 })
 
-// Structure options - organized by locus with best scores first
+// Structure options - organized by locus with best scores first (from curated dataset)
 const allStructureOptions = {
   A: [
-    { text: '21460 - A*02:01 - YLEPGPVTA - 0.881', value: '21460_VDJdb_gp100_HomoSapiens_A_0201_YLEPGPVTA_score_3' },
-    { text: '34114 - A*24:02 - RFPLTFGWCF - 0.875', value: '34114_VDJdb_Nef_HIV-1_A_2402_RFPLTFGWCF_score_3' },
-    { text: '34115 - A*24:02 - RYPLTFGWCF - 0.870', value: '34115_VDJdb_Nef_HIV-1_A_2402_RYPLTFGWCF_score_3' },
-    { text: '183 - A*68:01 - DATYQRTRALVR - 0.857', value: '183_VDJdb_NP_InfluenzaA_A_6801_DATYQRTRALVR_score_1' },
-    { text: '1983 - A*11:01 - IVTDFSVIK - 0.843', value: '1983_VDJdb_EBNA4_EBV_A_1101_IVTDFSVIK_score_1' },
-    { text: '21443 - A*24:02 - VYFFLPDHL - 0.835', value: '21443_VDJdb_gp100_HomoSapiens_A_2402_VYFFLPDHL_score_2' },
-    { text: '4782 - A*11:01 - IVTDFSVIK - 0.823', value: '4782_VDJdb_EBNA4_EBV_A_1101_IVTDFSVIK_score_1' },
-    { text: '21383 - A*24:02 - LYPEFIASI - 0.815', value: '21383_VDJdb_DPY19L4_HomoSapiens_A_2402_LYPEFIASI_score_2' },
-    { text: '21367 - A*02:01 - HMTEVVRHC - 0.803', value: '21367_VDJdb_p53_HomoSapiens_A_0201_HMTEVVRHC_score_3' },
-    { text: '21375 - A*01:01 - KVDPIGHVY - 0.784', value: '21375_VDJdb_MAGEA6_HomoSapiens_A_0101_KVDPIGHVY_score_2' },
-    { text: '14585 - A*03:01 - KLGGALQAK - 0.770', value: '14585_VDJdb_IE1_CMV_A_0301_KLGGALQAK_score_1' },
-    { text: '182 - A*68:01 - DATYQRTRALVR - 0.742', value: '182_VDJdb_NP_InfluenzaA_A_6801_DATYQRTRALVR_score_1' }
+    { text: '79017 - A*02:01 - RQFGPDFPTI - 0.940', value: '79017_VDJdb_RQFGPDFPTI_A0201_score_3' },
+    { text: '78877 - A*02:01 - LLFGYPVYV - 0.940', value: '78877_VDJdb_LLFGYPVYV_A0201_score_3' },
+    { text: '79056 - A*02:01 - SMLGIGIVPV - 0.940', value: '79056_VDJdb_SMLGIGIVPV_A0201_score_3' },
+    { text: '78908 - A*02:01 - GILGFVFTL - 0.936', value: '78908_VDJdb_GILGFVFTL_A0201_score_3' },
+    { text: '80277 - A*02:01 - AAGIGILTV - 0.931', value: '80277_VDJdb_AAGIGILTV_A0201_score_2' },
+    { text: '7131 - A*01:01 - EVDPIGHLY - 0.910', value: '7131_VDJdb_EVDPIGHLY_A0101_score_2' },
+    { text: '79011 - A*01:01 - EVDPIGHLY - 0.882', value: '79011_VDJdb_EVDPIGHLY_A0101_score_3' },
+    { text: '79012 - A*01:01 - ESDPIVAQY - 0.880', value: '79012_VDJdb_ESDPIVAQY_A0101_score_3' },
+    { text: '80931 - A*01:01 - ATDALMTGF - 0.815', value: '80931_VDJdb_ATDALMTGF_A0101_score_1' }
   ],
   B: [
-    { text: '21662 - B*35:01 - HPVGEADYFEY - 0.913', value: '21662_VDJdb_EBNA1_EBV_B_3501_HPVGEADYFEY_score_3' },
-    { text: '21664 - B*35:01 - EPLPQGQLTAY - 0.907', value: '21664_VDJdb_BZLF1_EBV_B_3501_EPLPQGQLTAY_score_3' },
-    { text: '21449 - B*07:02 - RVRFFFPSL - 0.883', value: '21449_VDJdb_MAGE-A1_HomoSapiens_B_0702_RVRFFFPSL_score_2' },
-    { text: '1834 - B*08:01 - RAKFKQLL - 0.880', value: '1834_VDJdb_BZLF1_EBV_B_0801_RAKFKQLL_score_1' },
-    { text: '21457 - B*07:02 - APRGPHGGAASGL - 0.869', value: '21457_VDJdb_NY-ESO-1_HomoSapiens_B_0702_APRGPHGGAASGL_score_3' },
-    { text: '21659 - B*35:01 - HPVGEADYFEY - 0.865', value: '21659_VDJdb_EBNA1_EBV_B_3501_HPVGEADYFEY_score_3' },
-    { text: '21379 - B*15:01 - VQIISCQY - 0.851', value: '21379_VDJdb_MED13_HomoSapiens_B_1501_VQIISCQY_score_2' },
-    { text: '21451 - B*18:01 - EEAAGIGIL - 0.823', value: '21451_VDJdb_MLANA_HomoSapiens_B_1801_EEAAGIGIL_score_2' }
+    { text: '6939 - B*51:01 - TAFTIPSI - 0.933', value: '6939_VDJdb_TAFTIPSI_B5101_score_1' },
+    { text: '6934 - B*51:01 - TAFTIPSI - 0.931', value: '6934_VDJdb_TAFTIPSI_B5101_score_1' },
+    { text: '6944 - B*51:01 - TAFTIPSI - 0.931', value: '6944_VDJdb_TAFTIPSI_B5101_score_1' },
+    { text: '80289 - B*35:01 - EPLPQGQLTAY - 0.930', value: '80289_VDJdb_EPLPQGQLTAY_B3501_score_3' },
+    { text: '80287 - B*35:01 - HPVGEADYFEY - 0.930', value: '80287_VDJdb_HPVGEADYFEY_B3501_score_3' },
+    { text: '4422 - B*35:01 - EPLPQGQLTAY - 0.930', value: '4422_VDJdb_EPLPQGQLTAY_B3501_score_3' },
+    { text: '6941 - B*51:01 - TAFTIPSI - 0.929', value: '6941_VDJdb_TAFTIPSI_B5101_score_1' }
   ]
 }
 
@@ -516,33 +514,43 @@ const initializeViewer = async () => {
     console.log('Initializing 3Dmol viewer...')
     loading.value = true
     error.value = null
-    
+
+    // Load structures metadata first
+    console.log('Loading structures metadata...')
+    try {
+      structuresMetadata.value = await loadStructuresData()
+      console.log(`Loaded metadata for ${structuresMetadata.value.length} structures`)
+    } catch (metadataError) {
+      console.warn('Failed to load metadata, will use fallback paths:', metadataError)
+      structuresMetadata.value = []
+    }
+
     // Clear any existing viewer
     if (viewer.value) {
       viewer.value.clear()
     }
-    
+
     // Wait for DOM
     await nextTick()
     await new Promise(resolve => setTimeout(resolve, 100))
-    
+
     // Verify DOM element exists
     if (!viewerContainer.value) {
       throw new Error('Viewer container element not found')
     }
-    
+
     console.log('Container element found:', viewerContainer.value)
-    
+
     // Create 3Dmol viewer
     viewer.value = $3Dmol.createViewer(viewerContainer.value, {
       backgroundColor: 'white'
     })
-    
+
     console.log('3Dmol viewer created successfully')
-    
+
     // Load default structure
     await loadStructure(selectedStructureId.value)
-    
+
   } catch (err) {
     console.error('Error initializing viewer:', err)
     error.value = `Failed to initialize 3D viewer: ${err.message}`
@@ -551,34 +559,61 @@ const initializeViewer = async () => {
   }
 }
 
+// Helper function to get structure file path and format
+const getStructurePathAndFormat = (structureId) => {
+  // Try to find structure in metadata
+  const metadata = structuresMetadata.value.find(s => s.structure_id === structureId)
+
+  if (metadata && metadata.best_source) {
+    // Determine format and path based on best_source
+    if (metadata.best_source === 'AlphaFold3') {
+      return {
+        path: `/data/structures/alphafold3/${structureId}.cif`,
+        format: 'cif'
+      }
+    } else if (metadata.best_source === 'TCRmodel2') {
+      return {
+        path: `/data/structures/tcrmodel2/${structureId}.pdb`,
+        format: 'pdb'
+      }
+    }
+  }
+
+  // Fallback: try TCRmodel2 first (most common)
+  return {
+    path: `/data/structures/tcrmodel2/${structureId}.pdb`,
+    format: 'pdb'
+  }
+}
+
 const loadStructure = async (structureId) => {
   if (!viewer.value) return
-  
+
   loading.value = true
   error.value = null
-  
+
   try {
     console.log('Loading structure:', structureId)
-    
+
     // Clear existing models
     console.log('Clearing existing models...')
     viewer.value.clear()
-    
-    // Load PDB file from the correct path
-    const pdbPath = `/data/ranked_0_collected/${structureId}.pdb`
-    console.log('Loading PDB from:', pdbPath)
-    
-    const response = await fetch(pdbPath)
+
+    // Get correct path and format for this structure
+    const { path: structurePath, format } = getStructurePathAndFormat(structureId)
+    console.log(`Loading ${format.toUpperCase()} from:`, structurePath)
+
+    const response = await fetch(structurePath)
     if (!response.ok) {
       throw new Error(`Failed to load structure: ${response.status} ${response.statusText}`)
     }
-    
-    const pdbData = await response.text()
-    
-    console.log('PDB data loaded, length:', pdbData.length)
-    
-    // Add to viewer
-    await viewer.value.addModel(pdbData, 'pdb')
+
+    const structureData = await response.text()
+
+    console.log(`${format.toUpperCase()} data loaded, length:`, structureData.length)
+
+    // Add to viewer with correct format
+    await viewer.value.addModel(structureData, format)
     console.log('Model added to viewer')
     
     // Apply visualization settings

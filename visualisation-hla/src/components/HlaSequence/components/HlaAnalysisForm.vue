@@ -54,7 +54,7 @@
               :model-value="formParams.mode"
               @update:model-value="updateParam('mode', $event)"
               :items="[
-                {title: 'Peptide or TCR', value: 'either'},
+                {title: 'Peptide + TCR', value: 'either'},
                 {title: 'TCR Only', value: 'tcr'},
                 {title: 'Peptide Only', value: 'peptide'}
               ]"
@@ -184,13 +184,38 @@
                   location="top"
                 >
                   <div style="max-width: 350px; font-size: 0.8em; line-height: 1.3;">
-                    When enabled, filters out non-polymorphic positions, keeping only positions
-                    with significant variability across HLA alleles. This focuses the analysis
-                    on functionally relevant positions that differ between alleles.
+                    When enabled, filters positions by heterozygosity threshold (see slider below).
+                    When disabled, all positions are shown regardless of polymorphism.
                   </div>
                 </v-tooltip>
               </template>
             </v-checkbox>
+
+            <!-- Slider d'hétérozygotie -->
+            <div class="slider-group-ultra-compact mt-2">
+              <label class="slider-label-ultra-compact">Heterozygosity threshold (%): {{ formParams.heterozygosityThreshold.toFixed(0) }}</label>
+              <v-slider
+                :model-value="formParams.heterozygosityThreshold"
+                @update:model-value="updateParam('heterozygosityThreshold', $event)"
+                min="0"
+                max="100"
+                step="1"
+                density="compact"
+                hide-details
+                thumb-label
+                color="primary"
+                class="slider-compact"
+              >
+                <template #prepend>
+                  <v-tooltip bottom>
+                    <template #activator="{ props }">
+                      <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
+                    </template>
+                    Minimum heterozygosity percentage for a position to be included. Higher values keep only highly variable positions.
+                  </v-tooltip>
+                </template>
+              </v-slider>
+            </div>
           </div>
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -216,7 +241,8 @@ export default {
         quantile: 0.7,
         allele1: '',
         allele2: '',
-        showPolymorphicOnly: true
+        showPolymorphicOnly: true,
+        heterozygosityThreshold: 5
       })
     },
     loading: {
@@ -260,7 +286,8 @@ export default {
         quantile: 0.7,
         allele1: '',
         allele2: '',
-        showPolymorphicOnly: true
+        showPolymorphicOnly: true,
+        heterozygosityThreshold: 5
       };
 
       // Mettre à jour tous les paramètres
@@ -278,7 +305,8 @@ export default {
         quantile: this.formParams.quantile,
         allele1: this.formParams.allele1,
         allele2: this.formParams.allele2,
-        showPolymorphicOnly: this.formParams.showPolymorphicOnly
+        showPolymorphicOnly: this.formParams.showPolymorphicOnly,
+        heterozygosityThreshold: this.formParams.heterozygosityThreshold
       };
 
       const urlParams = new URLSearchParams();
