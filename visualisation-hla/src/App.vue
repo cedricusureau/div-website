@@ -9,8 +9,13 @@
       app
     >
       <v-app-bar-title class="header-title">
-        <div class="title-main">TCR-Touch</div>
-        <div class="title-subtitle">HLA-TCR-Peptide Contact Database</div>
+        <div class="title-container">
+          <img src="/logo.svg" alt="TCR-Touch Logo" class="logo" />
+          <div class="title-text">
+            <div class="title-main">TCR-Touch</div>
+            <div class="title-subtitle">HLA-TCR-Peptide Contact Database</div>
+          </div>
+        </div>
       </v-app-bar-title>
       
       <v-spacer></v-spacer>
@@ -193,6 +198,23 @@ export default {
   padding: 8px 0;
 }
 
+.title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+}
+
+.title-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .title-main {
   font-size: 1.5rem !important;
   font-weight: 600;
@@ -222,34 +244,50 @@ export default {
   .app-content {
     padding: 0.5rem;
   }
-  
+
+  .logo {
+    height: 40px;
+  }
+
+  .title-container {
+    gap: 10px;
+  }
+
   .title-main {
     font-size: 1.3rem !important;
   }
-  
+
   .title-subtitle {
     font-size: 0.7rem !important;
   }
-  
+
   .nav-tab {
     min-width: 120px;
     padding: 0 0.5rem !important;
   }
-  
+
   .nav-tab .v-icon {
     display: none !important;
   }
 }
 
 @media (max-width: 480px) {
+  .logo {
+    height: 32px;
+  }
+
+  .title-container {
+    gap: 8px;
+  }
+
   .title-main {
     font-size: 1.1rem !important;
   }
-  
+
   .title-subtitle {
     font-size: 0.65rem !important;
   }
-  
+
   .nav-tab {
     font-size: 0.8rem !important;
     min-width: 100px;

@@ -19,6 +19,7 @@
     "papaparse": "^5.5.3",
     "primeicons": "^7.0.0",
     "primevue": "^4.2.5",
+    "sql.js": "^1.14.0",
     "vue": "^3.2.13",
     "vuetify": "^3.7.7"
   },

@@ -182,7 +182,7 @@
 /* eslint-env node */
 /* global defineProps, defineEmits */
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import * as $3Dmol from '3dmol'
+// import * as $3Dmol from '3dmol' // Temporarily disabled
 
 const props = defineProps({
   viewerParams: {

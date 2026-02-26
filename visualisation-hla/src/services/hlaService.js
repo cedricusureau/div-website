@@ -1,19 +1,18 @@
-import _ from 'lodash';
 import Papa from 'papaparse';
 import { getGranthamScore } from './granthamScores';
-
+import { ContactFrequencyService } from './contactFrequencyService';
+import { PolymorphismService } from './polymorphismService';
 
 export class HlaService {
    // Cache statique pour stocker les données
    static cache = {
     A: null,
     B: null,
-    mhcContacts: null,
     lastFetch: null
   };
 
   // Durée de validité du cache (par exemple, 1 heure)
-  static CACHE_DURATION = 60 * 60 * 1000; 
+  static CACHE_DURATION = 60 * 60 * 1000;
 
   static async loadData() {
     // Vérifier si les données sont déjà en cache et toujours valides
@@ -21,8 +20,7 @@ export class HlaService {
       console.log('Utilisation des données en cache');
       return {
         A: this.cache.A,
-        B: this.cache.B,
-        mhcContacts: this.cache.mhcContacts
+        B: this.cache.B
       };
     }
 
@@ -36,11 +34,10 @@ export class HlaService {
         return response.text();
       };
 
-      // Charger tous les fichiers en parallèle
-      const [csvTextA, csvTextB, csvTextMhc] = await Promise.all([
+      // Charger les fichiers de séquences HLA
+      const [csvTextA, csvTextB] = await Promise.all([
         fetchCSV('A.csv'),
-        fetchCSV('B.csv'),
-        fetchCSV('mhc_contacts_peptides.csv')
+        fetchCSV('B.csv')
       ]);
 
       // Fonction de parsing optimisée
@@ -52,38 +49,39 @@ export class HlaService {
             dynamicTyping: true,
             skipEmptyLines: true,
             complete: (results) => resolve(results.data),
-            // Retirer l'option chunk pour éviter les problèmes de mémoire
           });
         });
       };
 
-      // Parser tous les CSV en parallèle
-      const [dataA, dataB, dataMhc] = await Promise.all([
+      // Parser les CSV en parallèle
+      const [dataA, dataB] = await Promise.all([
         parseCSV(csvTextA),
-        parseCSV(csvTextB),
-        parseCSV(csvTextMhc)
+        parseCSV(csvTextB)
+      ]);
+
+      // Charger les services auxiliaires en parallèle
+      await Promise.all([
+        ContactFrequencyService.loadContactFrequency(),
+        PolymorphismService.loadPolymorphismData()
       ]);
 
       // Mettre à jour le cache
       this.cache.A = dataA;
       this.cache.B = dataB;
-      this.cache.mhcContacts = dataMhc;
       this.cache.lastFetch = Date.now();
 
       return {
         A: dataA,
-        B: dataB,
-        mhcContacts: dataMhc
+        B: dataB
       };
     } catch (error) {
       console.error('CSV loading error:', error);
       // Si une erreur survient pendant le chargement, utiliser le cache si disponible
-      if (this.cache.A && this.cache.B && this.cache.mhcContacts) {
+      if (this.cache.A && this.cache.B) {
         console.warn('Utilisation du cache après erreur de chargement');
         return {
           A: this.cache.A,
-          B: this.cache.B,
-          mhcContacts: this.cache.mhcContacts
+          B: this.cache.B
         };
       }
       throw new Error('Failed to load CSV data: ' + error.message);
@@ -95,7 +93,6 @@ export class HlaService {
     return (
       this.cache.A &&
       this.cache.B &&
-      this.cache.mhcContacts &&
       this.cache.lastFetch &&
       Date.now() - this.cache.lastFetch < this.CACHE_DURATION
     );
@@ -106,18 +103,31 @@ export class HlaService {
     this.cache = {
       A: null,
       B: null,
-      mhcContacts: null,
       lastFetch: null
     };
     return this.loadData();
   }
   
+  /**
+   * Obtient les positions de contact selon les paramètres donnés
+   * @param {string} locus - Locus ('A' ou 'B')
+   * @param {string} mode - Mode ('either', 'tcr', ou 'peptide')
+   * @param {number} distance - Distance en Å
+   * @param {number} quantile - Quantile (0-1)
+   * @param {boolean} polymorphicOnly - Appliquer le filtre polymorphique
+   * @param {string} allele1 - Premier allèle pour calcul de divergence (optionnel)
+   * @param {string} allele2 - Deuxième allèle pour calcul de divergence (optionnel)
+   * @param {Array} aCsv - Données de séquences HLA-A
+   * @param {Array} bCsv - Données de séquences HLA-B
+   * @param {Object} visiblePositions - Positions visibles (pour calcul tHed)
+   * @returns {Object}
+   */
   static getPatchPosition(
-    data,
     locus,
-    distanceThreshold,
-    percentageThreshold,
-    interactionType = null,
+    mode,
+    distance,
+    quantile,
+    polymorphicOnly = false,
     allele1 = null,
     allele2 = null,
     aCsv,
@@ -125,89 +135,48 @@ export class HlaService {
     visiblePositions = null
   ) {
 
-    // Calculer le total sur TOUTES les structures du locus (sans filtre de distance)
-    const allLocusData = data.filter(row => row.Locus === locus);
-    const totalStructures = _.uniqBy(allLocusData, 'Structure').length;
+    // Récupérer les positions pré-calculées depuis le lookup
+    const lookupResult = ContactFrequencyService.getPositions(mode, distance, quantile);
 
-    // Filtrage par locus et distance pour les calculs de positions
-    const filteredData = data.filter(row =>
-      row.Locus === locus &&
-      parseFloat(row.Threshold) === distanceThreshold
-    );
-    const positionInteractions = {};
-    const uniquePositions = _.uniq(filteredData.map(row => row.ResidueID));
-
-    // Store detailed contact information for each position
-
-    uniquePositions.forEach(position => {
-      const posData = filteredData.filter(row => row.ResidueID === position);
-
-      // Get peptide interactions
-      const peptideContacts = posData.filter(row =>
-        row.InteractingChains.includes('Peptide')
-      );
-      const peptideStructures = _.uniqBy(peptideContacts, 'Structure');
-
-      // Get TCR interactions
-      const tcrContacts = posData.filter(row =>
-        row.InteractingChains.includes('TCRA') ||
-        row.InteractingChains.includes('TCRB')
-      );
-      const tcrStructures = _.uniqBy(tcrContacts, 'Structure');
-
-      // Calculate union for "at least one" interaction (Peptide OR TCR)
-      const allInteractingContacts = posData.filter(row =>
-        row.InteractingChains.includes('Peptide') ||
-        row.InteractingChains.includes('TCRA') ||
-        row.InteractingChains.includes('TCRB')
-      );
-      const unionStructures = _.uniqBy(allInteractingContacts, 'Structure');
-
-      const peptidePercentage = (peptideStructures.length / totalStructures) * 100;
-      const tcrPercentage = (tcrStructures.length / totalStructures) * 100;
-      const unionPercentage = (unionStructures.length / totalStructures) * 100;
-
-      positionInteractions[position] = {
-        peptidePercentage,
-        tcrPercentage,
-        unionPercentage,
-        peptideStructures: peptideStructures.length,
-        tcrStructures: tcrStructures.length,
-        unionStructures: unionStructures.length
+    if (!lookupResult) {
+      console.error('Could not retrieve positions from contact frequency lookup');
+      return {
+        positionWeighted: {},
+        alleleSpecificPositions: null,
+        cHed: null,
+        tHed: null,
+        filteredData: [],
+        totalStructures: 0
       };
-    });
+    }
 
-    const positionWeighted = {};
-    Object.entries(positionInteractions).forEach(([position, interactions]) => {
-      if (interactionType === 'Peptide' &&
-        interactions.peptidePercentage > percentageThreshold) {
+    // Récupérer les positions selon le locus
+    const positions = locus === 'A' ? lookupResult.positions_A : lookupResult.positions_B;
+
+    // Créer le dictionnaire de positions (toutes marquées comme mode)
+    let positionWeighted = {};
+    positions.forEach(position => {
+      // Déterminer le type selon le mode
+      if (mode === 'either') {
+        positionWeighted[position] = 'Peptide or TCR';
+      } else if (mode === 'tcr') {
+        positionWeighted[position] = 'TCR';
+      } else if (mode === 'peptide') {
         positionWeighted[position] = 'Peptide';
       }
-      else if (interactionType === 'TCR' &&
-        interactions.tcrPercentage > percentageThreshold) {
-        positionWeighted[position] = 'TCR';
-      }
-      else if (interactionType === 'Peptide + TCR' &&
-        interactions.peptidePercentage > percentageThreshold &&
-        interactions.tcrPercentage > percentageThreshold) {
-        positionWeighted[position] = 'Peptide + TCR';
-      }
-      else if (interactionType === 'Peptide or TCR') {
-        // Use union percentage for "at least one" logic
-        if (interactions.unionPercentage > percentageThreshold) {
-          // Determine the specific type based on what interactions are present
-          if (interactions.peptidePercentage > percentageThreshold &&
-            interactions.tcrPercentage > percentageThreshold) {
-            positionWeighted[position] = 'Peptide + TCR';
-          } else if (interactions.peptidePercentage > percentageThreshold) {
-            positionWeighted[position] = 'Peptide';
-          } else {
-            positionWeighted[position] = 'TCR';
-          }
-        }
-      }
     });
 
+    // Appliquer le filtre polymorphique si demandé
+    if (polymorphicOnly) {
+      positionWeighted = PolymorphismService.filterByPolymorphism(
+        positionWeighted,
+        locus,
+        0, // threshold (non utilisé en mode polymorphicOnly)
+        true // polymorphicOnly
+      );
+    }
+
+    // Calculer les divergences si deux allèles sont fournis
     let cHed = null;
     let tHed = null;
     let alleleSpecificPositions = null;
@@ -236,7 +205,6 @@ export class HlaService {
           mismatch => positionsAsStrings.includes(String(mismatch.position))
         );
 
-
         if (positionsForCalculation.length > 0) {
           const weightedTotal = weightedMismatches.reduce(
             (sum, mismatch) => sum + (mismatch.granthamScore || 0),
@@ -252,8 +220,8 @@ export class HlaService {
       alleleSpecificPositions,
       cHed,
       tHed,
-      filteredData,
-      totalStructures
+      filteredData: [], // Plus utilisé avec le nouveau système
+      totalStructures: 432 // Nombre fixe de structures curées
     };
   }
 

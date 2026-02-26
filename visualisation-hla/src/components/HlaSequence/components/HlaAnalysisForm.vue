@@ -25,7 +25,7 @@
           </v-tooltip>
         </div>
 
-        <!-- Première ligne : Locus et Type d'interaction -->
+        <!-- Première ligne : Locus et Mode -->
         <v-row dense>
           <v-col cols="6">
             <v-select
@@ -48,18 +48,17 @@
               </template>
             </v-select>
           </v-col>
-          
+
           <v-col cols="6">
             <v-select
-              :model-value="formParams.interactionType"
-              @update:model-value="updateParam('interactionType', $event)"
+              :model-value="formParams.mode"
+              @update:model-value="updateParam('mode', $event)"
               :items="[
-                {title: 'Peptide Only', value: 'Peptide'}, 
-                {title: 'TCR Only', value: 'TCR'}, 
-                {title: 'Peptide and TCR', value: 'Peptide + TCR'},
-                {title: 'Peptide or TCR', value: 'Peptide or TCR'}
+                {title: 'Peptide or TCR', value: 'either'},
+                {title: 'TCR Only', value: 'tcr'},
+                {title: 'Peptide Only', value: 'peptide'}
               ]"
-              label="Interaction Type"
+              label="Contact Mode"
               density="comfortable"
               variant="outlined"
               hide-details
@@ -72,7 +71,7 @@
                   <template #activator="{ props }">
                     <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
                   </template>
-                  Select the type of molecular interactions to analyze
+                  Select which molecular interactions to consider: TCR, Peptide, or either (union)
                 </v-tooltip>
               </template>
               <template #item="{ props, item }">
@@ -90,13 +89,13 @@
         <v-row dense class="mt-3">
           <v-col cols="12">
             <div class="slider-group">
-              <label class="slider-label">Distance (Å): {{ formParams.distance }}</label>
+              <label class="slider-label">Distance (Å): {{ formParams.distance.toFixed(1) }}</label>
               <v-slider
                 :model-value="formParams.distance"
                 @update:model-value="updateParam('distance', $event)"
-                min="2"
-                max="7.5"
-                step="0.5"
+                min="2.0"
+                max="5.0"
+                step="0.1"
                 density="compact"
                 hide-details
                 thumb-label
@@ -107,25 +106,25 @@
                     <template #activator="{ props }">
                       <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
                     </template>
-                    Maximum distance (in Angstroms) between residues to consider them in contact
+                    Maximum distance threshold (in Angstroms) for contact detection
                   </v-tooltip>
                 </template>
               </v-slider>
             </div>
           </v-col>
         </v-row>
-        
-        <!-- Frequency slider -->
+
+        <!-- Quantile slider -->
         <v-row dense class="mt-2">
           <v-col cols="12">
             <div class="slider-group">
-              <label class="slider-label">Frequency (%): {{ formParams.percentage }}</label>
+              <label class="slider-label">Quantile: {{ formParams.quantile.toFixed(2) }}</label>
               <v-slider
-                :model-value="formParams.percentage"
-                @update:model-value="updateParam('percentage', $event)"
-                min="0"
-                max="100"
-                step="5"
+                :model-value="formParams.quantile"
+                @update:model-value="updateParam('quantile', $event)"
+                min="0.30"
+                max="0.90"
+                step="0.05"
                 density="compact"
                 hide-details
                 thumb-label
@@ -136,7 +135,7 @@
                     <template #activator="{ props }">
                       <v-icon v-bind="props" size="small" color="grey">mdi-help-circle</v-icon>
                     </template>
-                    Minimum percentage of structures where the interaction is observed
+                    Frequency quantile threshold: positions present in at least this quantile of structures
                   </v-tooltip>
                 </template>
               </v-slider>
@@ -173,44 +172,25 @@
             <v-checkbox
               :model-value="formParams.showPolymorphicOnly"
               @update:model-value="updateParam('showPolymorphicOnly', $event)"
-              label="Do not include non-polymorphic positions"
+              label="Only include polymorphic positions"
               density="compact"
               hide-details
               class="checkbox-ultra-compact"
             >
               <template #label>
-                <span>Do not include non-polymorphic positions</span>
+                <span>Only include polymorphic positions</span>
                 <v-tooltip
                   activator="parent"
                   location="top"
                 >
                   <div style="max-width: 350px; font-size: 0.8em; line-height: 1.3;">
-                    This option excludes non-polymorphic positions from analysis and visualization.
-                    Including non-polymorphic positions dilutes all divergence values equally by increasing 
-                    the denominator, but preserves relative comparisons between allele pairs when the same 
-                    set of positions is used for all comparisons.
+                    When enabled, filters out non-polymorphic positions, keeping only positions
+                    with significant variability across HLA alleles. This focuses the analysis
+                    on functionally relevant positions that differ between alleles.
                   </div>
                 </v-tooltip>
               </template>
             </v-checkbox>
-            
-            <v-slide-y-transition>
-              <div v-if="formParams.showPolymorphicOnly" class="entropy-section">
-                <label class="entropy-label">Entropy: {{ formParams.entropyThreshold }}</label>
-                <v-slider
-                  :model-value="formParams.entropyThreshold"
-                  @update:model-value="updateParam('entropyThreshold', $event)"
-                  min="0"
-                  max="3"
-                  step="0.1"
-                  density="compact"
-                  hide-details
-                  thumb-label
-                  color="secondary"
-                  class="entropy-slider"
-                />
-              </div>
-            </v-slide-y-transition>
           </div>
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -231,13 +211,12 @@ export default {
       required: true,
       default: () => ({
         locus: 'A',
-        distance: 3,
-        percentage: 50,
-        interactionType: 'Peptide or TCR',
+        mode: 'either',
+        distance: 4.0,
+        quantile: 0.7,
         allele1: '',
         allele2: '',
-        showPolymorphicOnly: true,
-        entropyThreshold: 0.2
+        showPolymorphicOnly: true
       })
     },
     loading: {
@@ -276,15 +255,14 @@ export default {
       // Reset vers les valeurs par défaut
       const defaultParams = {
         locus: 'A',
-        distance: 3,
-        percentage: 50,
-        interactionType: 'Peptide or TCR',
+        mode: 'either',
+        distance: 4.0,
+        quantile: 0.7,
         allele1: '',
         allele2: '',
-        showPolymorphicOnly: true,
-        entropyThreshold: 0.2
+        showPolymorphicOnly: true
       };
-      
+
       // Mettre à jour tous les paramètres
       Object.keys(defaultParams).forEach(key => {
         this.updateParam(key, defaultParams[key]);
@@ -295,22 +273,21 @@ export default {
       const params = {
         locus: this.formParams.locus,
         positions: this.filteredPositions.join(','),
+        mode: this.formParams.mode,
         distance: this.formParams.distance,
-        percentage: this.formParams.percentage,
-        interactionType: this.formParams.interactionType,
+        quantile: this.formParams.quantile,
         allele1: this.formParams.allele1,
         allele2: this.formParams.allele2,
-        showPolymorphicOnly: this.formParams.showPolymorphicOnly,
-        entropyThreshold: this.formParams.entropyThreshold
+        showPolymorphicOnly: this.formParams.showPolymorphicOnly
       };
-      
+
       const urlParams = new URLSearchParams();
       Object.keys(params).forEach(key => {
         if (params[key] !== '' && params[key] !== null && params[key] !== undefined) {
           urlParams.set(key, params[key]);
         }
       });
-      
+
       // Open in new tab with structure viewer
       const newUrl = `${window.location.origin}?view=structureViewer&${urlParams.toString()}`;
       window.open(newUrl, '_blank');
@@ -460,35 +437,6 @@ export default {
   line-height: 1.2 !important;
 }
 
-.entropy-section {
-  margin-top: 4px;
-  margin-bottom: 0;
-  padding: 0;
-}
-
-.entropy-label {
-  font-size: 0.65rem !important;
-  color: #666;
-  display: block;
-  margin-bottom: 2px;
-  line-height: 1.2;
-}
-
-.entropy-slider {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.entropy-slider :deep(.v-slider) {
-  margin: 0 !important;
-  min-height: 20px !important;
-}
-
-.entropy-slider :deep(.v-slider__container) {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
 /* Ajuster légèrement la taille du cadre des selects */
 .select-with-spacing :deep(.v-field) {
   min-height: 48px !important;
@@ -599,10 +547,6 @@ export default {
   
   .checkbox-ultra-compact :deep(.v-label) {
     font-size: 0.65rem !important;
-  }
-  
-  .entropy-label {
-    font-size: 0.6rem !important;
   }
 }
 

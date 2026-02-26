@@ -1,20 +1,18 @@
-import { ref, shallowRef, reactive, computed } from 'vue';
+import { ref, shallowRef, reactive } from 'vue';
 import { HlaService } from '@/services/hlaService';
-import { EntropyService } from '@/services/entropyService';
+import { PolymorphismService } from '@/services/polymorphismService';
 
 export function useHlaAnalysis() {
   // Utiliser shallowRef pour les grandes structures de données qui ne changent pas souvent
-  const csvData = shallowRef([]);
   const aCsvData = shallowRef([]);
   const bCsvData = shallowRef([]);
   const positions = shallowRef({});
-  const rawPositions = shallowRef({}); // Stocke toutes les positions avant filtrage
-  const filteredContactData = shallowRef([]);
-  const entropyData = shallowRef({
+  const rawPositions = shallowRef({}); // Stocke toutes les positions avant filtrage polymorphique
+  const polymorphismData = shallowRef({
     A: {},
     B: {}
   });
-  
+
   // Utiliser ref normal pour les valeurs primitives ou les objets qui changent souvent
   const alleleSpecificPositionsResult = ref(null);
   const loading = ref(false);
@@ -22,51 +20,30 @@ export function useHlaAnalysis() {
   const cHed = ref(null);
   const tHed = ref(null);
   const totalStructure = ref(null);
- 
+
   // État de formulaire local
   const formParams = reactive({
     locus: 'A',
-    distance: 3,
-    percentage: 50,
-    interactionType: 'Peptide or TCR',
+    mode: 'either', // 'either', 'tcr', 'peptide'
+    distance: 4.0,
+    quantile: 0.7,
     allele1: '',
     allele2: '',
-    showPolymorphicOnly: true,
-    entropyThreshold: 0.2
-  });
-
-  // Computed pour les positions filtrées par entropie
-  const filteredPositions = computed(() => {
-    if (!formParams.showPolymorphicOnly) {
-      return rawPositions.value;
-    }
-    
-    const locusEntropyData = entropyData.value[formParams.locus] || {};
-    const threshold = formParams.entropyThreshold; // Utiliser le seuil paramétrable
-    
-    return Object.entries(rawPositions.value).reduce((filtered, [position, type]) => {
-      const entropy = locusEntropyData[position];
-      // Inclure seulement si l'entropie est définie et >= seuil
-      if (entropy !== undefined && entropy >= threshold) {
-        filtered[position] = type;
-      }
-      return filtered;
-    }, {});
+    showPolymorphicOnly: true
   });
 
   async function initializeData() {
     loading.value = true;
     try {
-      // Charger les données HLA
-      const { A: aData, B: bData, mhcContacts } = await HlaService.loadData();
-      csvData.value = mhcContacts;
+      // Charger les données HLA (séquences) et les services auxiliaires
+      const { A: aData, B: bData } = await HlaService.loadData();
       aCsvData.value = aData;
       bCsvData.value = bData;
-      
-      // Charger les données d'entropie
-      const entropyDataResult = await EntropyService.loadEntropyData();
-      entropyData.value = entropyDataResult;
-      
+
+      // Charger les données de polymorphisme
+      const polymorphismDataResult = await PolymorphismService.loadPolymorphismData();
+      polymorphismData.value = polymorphismDataResult;
+
       await calculatePositions();
     } catch (err) {
       error.value = err.message;
@@ -77,61 +54,50 @@ export function useHlaAnalysis() {
 
   function updateParams(newParams) {
     Object.assign(formParams, newParams);
-    
-    // Si nous changeons le filtrage d'entropie ou le seuil, mettre à jour les positions
-    if ('showPolymorphicOnly' in newParams || 'entropyThreshold' in newParams) {
-      positions.value = filteredPositions.value;
-    }
   }
 
   async function calculatePositions() {
-    if (!csvData.value.length) return;
-   
+    if (!aCsvData.value.length || !bCsvData.value.length) return;
+
     try {
-      const result = await HlaService.getPatchPosition(
-        csvData.value,
+      const result = HlaService.getPatchPosition(
         formParams.locus,
+        formParams.mode,
         formParams.distance,
-        formParams.percentage,
-        formParams.interactionType,
+        formParams.quantile,
+        formParams.showPolymorphicOnly,
         formParams.allele1,
         formParams.allele2,
         aCsvData.value,
         bCsvData.value,
-        filteredPositions.value
+        null // visiblePositions pour calcul tHed (sera ajouté plus tard si nécessaire)
       );
 
-      // Stocker toutes les positions non filtrées
-      rawPositions.value = result.positionWeighted;
-      
-      // Appliquer le filtre d'entropie
-      positions.value = filteredPositions.value;
-      
-      // Store the new detailed data
-      filteredContactData.value = result.filteredData;
+      // Les positions sont déjà filtrées selon showPolymorphicOnly
+      positions.value = result.positionWeighted;
+      rawPositions.value = result.positionWeighted; // Plus de distinction nécessaire
 
-      // Important : utiliser totalStructures du service (calculé sur données non filtrées)
+      // Nombre fixe de structures curées
       totalStructure.value = result.totalStructures;
-      
+
       // Update allele-specific positions
       if (result.alleleSpecificPositions) {
         alleleSpecificPositionsResult.value = result.alleleSpecificPositions;
       } else {
         alleleSpecificPositionsResult.value = null;
       }
-      
+
       // Update divergence values
       cHed.value = result.cHed;
       tHed.value = result.tHed;
-   
+
     } catch (err) {
       error.value = err.message;
       console.error('Error calculating positions:', err);
-      
+
       // Reset all values
       rawPositions.value = {};
       positions.value = {};
-      filteredContactData.value = null;
       alleleSpecificPositionsResult.value = null;
       cHed.value = null;
       tHed.value = null;
@@ -151,9 +117,9 @@ export function useHlaAnalysis() {
     alleleSpecificPositionsResult,
     cHed,
     tHed,
-    filteredContactData,    
     totalStructure,
-    entropyData,
-    rawPositions
+    polymorphismData,
+    rawPositions,
+    filteredContactData: shallowRef([]) // Deprecated - kept for backward compatibility
   };
 }
