@@ -62,6 +62,7 @@
 </template>
 
 <script setup>
+/* eslint-disable no-undef */
 import { ref, watch, computed } from 'vue';
 import { positionDistancesService } from '../../../services/positionDistancesService';
 import GlobalDistributionChart from '../../PositionDistances/components/GlobalDistributionChart.vue';
