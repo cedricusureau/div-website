@@ -34,22 +34,34 @@ const props = defineProps({
 
 const chartContainer = ref(null)
 
-// Calculer les stats
+// Dédupliquer par structure_id (chaque structure a 2 mesures: Peptide + TCR)
+// On garde la distance minimale par structure
+const uniqueDistances = computed(() => {
+  const byStructure = {}
+  props.data.forEach(d => {
+    const structureId = d.structure_id
+    if (!byStructure[structureId] || d.min_distance < byStructure[structureId]) {
+      byStructure[structureId] = d.min_distance
+    }
+  })
+  return Object.values(byStructure)
+})
+
+// Calculer les stats sur les distances dédupliquées
 const stats = computed(() => {
-  const distances = props.data.map(d => d.min_distance)
-  return positionDistancesService.calculateStats(distances)
+  return positionDistancesService.calculateStats(uniqueDistances.value)
 })
 
 /**
  * Render le graphique D3
  */
 const renderChart = () => {
-  if (!chartContainer.value || props.data.length === 0) return
+  if (!chartContainer.value || uniqueDistances.value.length === 0) return
 
   // Clear previous chart
   d3.select(chartContainer.value).selectAll('*').remove()
 
-  const distances = props.data.map(d => d.min_distance)
+  const distances = uniqueDistances.value
 
   // Calculer KDE et histogramme
   const kde = positionDistancesService.calculateKDE(distances)

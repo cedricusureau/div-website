@@ -43,16 +43,26 @@ const chartContainer = ref(null)
 // Palette de couleurs catégorielle
 const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
 
-// Grouper les données par acide aminé
+// Grouper les données par acide aminé, en dédupliquant par structure_id
+// (chaque structure a 2 mesures: Peptide + TCR, on garde la min)
 const dataByAminoAcid = computed(() => {
   const grouped = {}
   props.data.forEach(d => {
     if (!grouped[d.aa]) {
-      grouped[d.aa] = []
+      grouped[d.aa] = {}
     }
-    grouped[d.aa].push(d.min_distance)
+    // Garder la distance minimale par structure
+    const structureId = d.structure_id
+    if (!grouped[d.aa][structureId] || d.min_distance < grouped[d.aa][structureId]) {
+      grouped[d.aa][structureId] = d.min_distance
+    }
   })
-  return grouped
+  // Convertir en array de distances
+  const result = {}
+  Object.keys(grouped).forEach(aa => {
+    result[aa] = Object.values(grouped[aa])
+  })
+  return result
 })
 
 // Créer la liste des acides aminés avec leurs propriétés
