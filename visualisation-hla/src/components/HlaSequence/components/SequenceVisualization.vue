@@ -455,6 +455,15 @@ export default {
         }
       },
       immediate: true
+    },
+    activeAnalysisTab: {
+      handler() {
+        // Preserve scroll position when switching tabs
+        const scrollY = window.scrollY;
+        this.$nextTick(() => {
+          window.scrollTo(0, scrollY);
+        });
+      }
     }
   },
   mounted() {
@@ -822,6 +831,7 @@ svg {
   margin-bottom: 20px;
   border: 1px solid rgba(224, 224, 224, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow-anchor: none; /* Prevent scroll jump when tab content changes */
 }
 
 /* No selection message */
@@ -857,10 +867,12 @@ svg {
 
 .tab-content {
   padding-top: 20px;
+  overflow-anchor: none;
 }
 
 .tab-panel {
   min-height: 500px;
+  overflow-anchor: none;
 }
 
 /* Styles pour la section de comparaison d'allèles */
