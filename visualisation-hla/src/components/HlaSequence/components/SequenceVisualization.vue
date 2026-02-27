@@ -325,7 +325,7 @@
 
     <!-- No Selection Message -->
     <div v-else-if="positions && Object.keys(positions).length > 0" class="no-selection-message">
-      <p>👆 Cliquez sur une position dans la frise pour analyser ses interactions et distances</p>
+      <p>👆 Click on a position in the sequence to analyze its interactions and distances</p>
     </div>
   </div>
 </template>

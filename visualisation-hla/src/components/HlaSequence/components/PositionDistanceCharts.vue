@@ -3,7 +3,7 @@
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
-      <p class="loading-text">Chargement des données de distance...</p>
+      <p class="loading-text">Loading distance data...</p>
     </div>
 
     <!-- Error State -->
@@ -18,8 +18,8 @@
       <!-- Global Distribution -->
       <div class="chart-card">
         <div class="chart-header">
-          <h4>Distribution globale</h4>
-          <p class="chart-subtitle">Toutes les structures confondues (n={{ positionData.length }})</p>
+          <h4>Global Distribution</h4>
+          <p class="chart-subtitle">All structures combined (n={{ positionData.length }})</p>
         </div>
         <GlobalDistributionChart
           :data="positionData"
@@ -30,8 +30,8 @@
       <!-- Target Breakdown -->
       <div class="chart-card">
         <div class="chart-header">
-          <h4>Distribution par cible</h4>
-          <p class="chart-subtitle">Comparaison Peptide vs TCR</p>
+          <h4>Distribution by Target</h4>
+          <p class="chart-subtitle">Peptide vs TCR Comparison</p>
         </div>
         <TargetBreakdownChart
           :data="positionData"
@@ -42,8 +42,8 @@
       <!-- Amino Acid Breakdown -->
       <div class="chart-card">
         <div class="chart-header">
-          <h4>Distribution par acide aminé</h4>
-          <p class="chart-subtitle">KDE superposés par acide aminé présent à cette position</p>
+          <h4>Distribution by Amino Acid</h4>
+          <p class="chart-subtitle">Overlaid KDE by amino acid present at this position</p>
         </div>
         <AminoAcidBreakdownChart
           :data="positionData"
@@ -55,7 +55,7 @@
     <!-- No Data State -->
     <div v-else class="no-data-state">
       <v-alert type="info" variant="tonal">
-        Aucune donnée de distance disponible pour la position {{ positionLabel }}
+        No distance data available for position {{ positionLabel }}
       </v-alert>
     </div>
   </div>
@@ -103,10 +103,10 @@ const loadData = async () => {
       props.position
     );
     positionData.value = data;
-    console.log(`PositionDistanceCharts: ${data.length} mesures chargées pour ${positionLabel.value}`);
+    console.log(`PositionDistanceCharts: ${data.length} measurements loaded for ${positionLabel.value}`);
   } catch (err) {
-    error.value = `Erreur de chargement: ${err.message}`;
-    console.error('Erreur PositionDistanceCharts:', err);
+    error.value = `Loading error: ${err.message}`;
+    console.error('PositionDistanceCharts error:', err);
     positionData.value = [];
   } finally {
     loading.value = false;
