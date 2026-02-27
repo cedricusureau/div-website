@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-/* global defineProps */
+/* eslint-disable no-undef */
 import { ref, onMounted, watch, nextTick, computed, reactive } from 'vue'
 import * as d3 from 'd3'
 import { positionDistancesService } from '../../../services/positionDistancesService'

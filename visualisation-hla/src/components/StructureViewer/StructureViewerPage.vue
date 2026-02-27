@@ -320,8 +320,7 @@
 </template>
 
 <script setup>
-/* eslint-env node */
-/* global defineProps, defineEmits */
+/* eslint-disable no-undef */
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as $3Dmol from '3dmol'
 import { loadStructuresData } from '@/services/hlaStructuresService'
