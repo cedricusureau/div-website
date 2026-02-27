@@ -317,7 +317,7 @@
 
       <v-window v-model="activeAnalysisTab" class="tab-content">
         <!-- Sankey Diagram Tab -->
-        <v-window-item value="interactions">
+        <v-window-item value="interactions" eager>
           <div class="tab-panel">
             <PeptideInteractionsSankey
               :filteredContactData="filteredContactData"
@@ -328,7 +328,7 @@
         </v-window-item>
 
         <!-- Distance Analysis Tab -->
-        <v-window-item value="distances">
+        <v-window-item value="distances" eager>
           <div class="tab-panel">
             <PositionDistanceCharts
               :locus="currentLocus"
@@ -860,7 +860,7 @@ svg {
 }
 
 .tab-panel {
-  min-height: 400px;
+  min-height: 500px;
 }
 
 /* Styles pour la section de comparaison d'allèles */
