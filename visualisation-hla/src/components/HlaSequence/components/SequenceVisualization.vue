@@ -300,27 +300,43 @@
     <!-- Position Analysis Section -->
     <div v-if="selectedPositions.length > 0" class="analysis-section" ref="analysisSection">
       <div class="section-header">
-        <h2>Position {{ selectedPositions[0] }}:{{ currentLocus }} - Interactions & Distance Analysis</h2>
+        <h2>Position {{ selectedPositions[0] }}:{{ currentLocus }} - Analysis</h2>
       </div>
 
-      <!-- Sankey Diagram -->
-      <div class="sankey-subsection">
-        <h3>Peptide/TCR Interactions</h3>
-        <PeptideInteractionsSankey
-          :filteredContactData="filteredContactData"
-          :selectedPositions="selectedPositions"
-          :totalStructures="totalStructure"
-        />
-      </div>
+      <!-- Tabs -->
+      <v-tabs v-model="activeAnalysisTab" color="primary" class="analysis-tabs">
+        <v-tab value="interactions">
+          <v-icon left size="small">mdi-chart-sankey</v-icon>
+          Peptide/TCR Interactions
+        </v-tab>
+        <v-tab value="distances">
+          <v-icon left size="small">mdi-chart-bell-curve</v-icon>
+          Distance Distributions
+        </v-tab>
+      </v-tabs>
 
-      <!-- Distance Analysis -->
-      <div class="distance-subsection">
-        <h3>Distance Distributions</h3>
-        <PositionDistanceCharts
-          :locus="currentLocus"
-          :position="parseInt(selectedPositions[0])"
-        />
-      </div>
+      <v-window v-model="activeAnalysisTab" class="tab-content">
+        <!-- Sankey Diagram Tab -->
+        <v-window-item value="interactions">
+          <div class="tab-panel">
+            <PeptideInteractionsSankey
+              :filteredContactData="filteredContactData"
+              :selectedPositions="selectedPositions"
+              :totalStructures="totalStructure"
+            />
+          </div>
+        </v-window-item>
+
+        <!-- Distance Analysis Tab -->
+        <v-window-item value="distances">
+          <div class="tab-panel">
+            <PositionDistanceCharts
+              :locus="currentLocus"
+              :position="parseInt(selectedPositions[0])"
+            />
+          </div>
+        </v-window-item>
+      </v-window>
     </div>
 
     <!-- No Selection Message -->
@@ -383,6 +399,8 @@ export default {
         'TCR': '#4ECDC4',
         'Peptide + TCR': '#A78ADB'
       },
+      // Onglet actif pour l'analyse de position
+      activeAnalysisTab: 'interactions',
       // États pour la sélection d'allèles
       currentAllele1: '',
       currentAllele2: '',
@@ -831,23 +849,18 @@ svg {
   border-bottom: 2px solid #e0e0e0;
 }
 
-/* Subsections */
-.sankey-subsection {
-  margin-bottom: 32px;
+/* Analysis Tabs */
+.analysis-tabs {
+  margin-bottom: 0;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.distance-subsection {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 2px solid #e0e0e0;
+.tab-content {
+  padding-top: 20px;
 }
 
-.sankey-subsection h3,
-.distance-subsection h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0 0 20px 0;
+.tab-panel {
+  min-height: 400px;
 }
 
 /* Styles pour la section de comparaison d'allèles */
