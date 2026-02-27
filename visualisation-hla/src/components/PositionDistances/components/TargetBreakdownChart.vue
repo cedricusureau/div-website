@@ -101,10 +101,9 @@ const renderChart = () => {
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`)
 
-  // Scales
-  const allDistances = [...peptideData.value, ...tcrData.value]
+  // Scales - Fixed domain [0, 15] Å
   const x = d3.scaleLinear()
-    .domain([0, d3.max(allDistances) * 1.1])
+    .domain([0, 15])
     .range([0, width])
 
   const allYValues = [...peptideKde.y, ...tcrKde.y]
@@ -126,7 +125,9 @@ const renderChart = () => {
 
   // Peptide KDE
   if (targets.Peptide.visible && peptideData.value.length > 0) {
+    // Filter KDE data to [0, 15] range
     const peptideKdeData = peptideKde.x.map((x, i) => ({ x, y: peptideKde.y[i] }))
+      .filter(d => d.x >= 0 && d.x <= 15)
 
     svg.append('path')
       .datum(peptideKdeData)
@@ -146,7 +147,9 @@ const renderChart = () => {
 
   // TCR KDE
   if (targets.TCR.visible && tcrData.value.length > 0) {
+    // Filter KDE data to [0, 15] range
     const tcrKdeData = tcrKde.x.map((x, i) => ({ x, y: tcrKde.y[i] }))
+      .filter(d => d.x >= 0 && d.x <= 15)
 
     svg.append('path')
       .datum(tcrKdeData)
@@ -177,7 +180,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '14px')
     .style('font-weight', 'bold')
-    .text('Distance minimale (Å)')
+    .text('Minimum distance (Å)')
 
   // Y Axis
   svg.append('g')
@@ -192,7 +195,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '14px')
     .style('font-weight', 'bold')
-    .text('Densité')
+    .text('Density')
 
   // Title
   svg.append('text')
@@ -201,7 +204,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '16px')
     .style('font-weight', 'bold')
-    .text(`Comparaison Peptide vs TCR - Position ${props.position}`)
+    .text(`Peptide vs TCR comparison - Position ${props.position}`)
 
   // Stats annotations
   if (targets.Peptide.visible && peptideData.value.length > 0) {

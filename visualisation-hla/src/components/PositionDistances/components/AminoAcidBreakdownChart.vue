@@ -120,22 +120,28 @@ const renderChart = () => {
     if (aa.visible && dataByAminoAcid.value[aa.name]) {
       const kde = positionDistancesService.calculateKDE(dataByAminoAcid.value[aa.name])
       if (kde.x.length > 0) {
+        // Filter KDE data to [0, 15] range
+        const filteredKde = kde.x.map((x, i) => ({ x, y: kde.y[i] }))
+          .filter(d => d.x >= 0 && d.x <= 15)
         kdeDataArray.push({
           aa: aa.name,
           color: aa.color,
-          kde: kde.x.map((x, i) => ({ x, y: kde.y[i] }))
+          kde: filteredKde
         })
-        maxY = Math.max(maxY, ...kde.y)
+        // Use filtered KDE values for maxY
+        const filteredYValues = filteredKde.map(d => d.y)
+        if (filteredYValues.length > 0) {
+          maxY = Math.max(maxY, ...filteredYValues)
+        }
       }
     }
   })
 
   if (kdeDataArray.length === 0) return
 
-  // Scales
-  const allDistances = props.data.map(d => d.min_distance)
+  // Scales - Fixed domain [0, 15] Å
   const x = d3.scaleLinear()
-    .domain([0, d3.max(allDistances) * 1.1])
+    .domain([0, 15])
     .range([0, width])
 
   const y = d3.scaleLinear()
@@ -220,7 +226,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '14px')
     .style('font-weight', 'bold')
-    .text('Distance minimale (Å)')
+    .text('Minimum distance (Å)')
 
   // Y Axis
   svg.append('g')
@@ -235,7 +241,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '14px')
     .style('font-weight', 'bold')
-    .text('Densité')
+    .text('Density')
 
   // Title
   svg.append('text')
@@ -244,7 +250,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '16px')
     .style('font-weight', 'bold')
-    .text(`Distribution par acide aminé - Position ${props.position}`)
+    .text(`Distribution by amino acid - Position ${props.position}`)
 }
 
 /**

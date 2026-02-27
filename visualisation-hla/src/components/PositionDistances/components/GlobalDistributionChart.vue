@@ -3,9 +3,9 @@
     <!-- Stats Summary -->
     <div class="stats-summary mb-4">
       <v-chip class="mr-2" size="small">n = {{ stats.n }}</v-chip>
-      <v-chip class="mr-2" size="small">Moyenne: {{ stats.mean }} Å</v-chip>
-      <v-chip class="mr-2" size="small">Médiane: {{ stats.median }} Å</v-chip>
-      <v-chip class="mr-2" size="small">Écart-type: {{ stats.std }} Å</v-chip>
+      <v-chip class="mr-2" size="small">Mean: {{ stats.mean }} Å</v-chip>
+      <v-chip class="mr-2" size="small">Median: {{ stats.median }} Å</v-chip>
+      <v-chip class="mr-2" size="small">Std: {{ stats.std }} Å</v-chip>
       <v-chip class="mr-2" size="small">Min: {{ stats.min }} Å</v-chip>
       <v-chip class="mr-2" size="small">Max: {{ stats.max }} Å</v-chip>
     </div>
@@ -67,9 +67,9 @@ const renderChart = () => {
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`)
 
-  // Scales
+  // Scales - Fixed domain [0, 15] Å
   const x = d3.scaleLinear()
-    .domain([0, d3.max(distances) * 1.1])
+    .domain([0, 15])
     .range([0, width])
 
   const yHist = d3.scaleLinear()
@@ -121,7 +121,9 @@ const renderChart = () => {
     .y(d => yKde(d.y))
     .curve(d3.curveBasis)
 
+  // Filter KDE data to [0, 15] range
   const kdeData = kde.x.map((x, i) => ({ x, y: kde.y[i] }))
+    .filter(d => d.x >= 0 && d.x <= 15)
 
   svg.append('path')
     .datum(kdeData)
@@ -158,7 +160,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '14px')
     .style('font-weight', 'bold')
-    .text('Distance minimale (Å)')
+    .text('Minimum distance (Å)')
 
   // Y Axis (KDE)
   svg.append('g')
@@ -173,7 +175,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '14px')
     .style('font-weight', 'bold')
-    .text('Densité')
+    .text('Density')
 
   // Title
   svg.append('text')
@@ -182,7 +184,7 @@ const renderChart = () => {
     .attr('text-anchor', 'middle')
     .style('font-size', '16px')
     .style('font-weight', 'bold')
-    .text(`Distribution globale - Position ${props.position}`)
+    .text(`Global distribution - Position ${props.position}`)
 }
 
 /**
