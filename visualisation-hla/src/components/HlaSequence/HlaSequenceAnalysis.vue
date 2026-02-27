@@ -84,13 +84,14 @@
               >
                 <SequenceVisualization
                   :positions="positions"
-                  :total-positions="filteredPositionsKeys.length"  
+                  :total-positions="filteredPositionsKeys.length"
                   :allele-specific-positions-result="alleleSpecificPositionsResult"
                   :cHed="cHed"
                   :tHed="tHed"
                   :filtered-contact-data="filteredContactDataByPositions"
                   :selectedPositions="explorationSelectedPositions"
                   :current-locus="formParams.locus"
+                  :contact-mode="formParams.mode"
                   :totalStructure="totalStructure"
                   @positions-selected="handleExplorationPositionSelection"
                   @allele-changed="handleAlleleChanged"

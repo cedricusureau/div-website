@@ -65,14 +65,20 @@
             <div class="database-section">
               <h3 class="subsection-title">🏛️ Structural Database</h3>
               <p class="tutorial-text">
-                Our analysis is based on a comprehensive set of three-dimensional structures from the 
-                <strong>Protein Data Bank (PDB)</strong> complemented by structures generated using 
-                <a href="https://academic.oup.com/nar/article/51/W1/W569/7151345" target="_blank" class="publication-link"><strong>TCRmodel2</strong></a> 
-                (sequences derived from <a href="https://www.nature.com/articles/s41592-022-01578-0" target="_blank" class="publication-link"><strong>VDJdb</strong></a> data).
+                Our analysis is based on a curated set of three-dimensional structures derived from TCR sequences in the
+                <a href="https://www.nature.com/articles/s41592-022-01578-0" target="_blank" class="publication-link"><strong>VDJdb database</strong></a>,
+                generated using two complementary computational approaches:
               </p>
-              
+              <ul class="feature-list">
+                <li><strong><a href="https://alphafold.ebi.ac.uk/" target="_blank" class="publication-link">AlphaFold3</a>:</strong> State-of-the-art deep learning predictions for HLA-TCR-peptide complexes</li>
+                <li><strong><a href="https://academic.oup.com/nar/article/51/W1/W569/7151345" target="_blank" class="publication-link">TCRmodel2</a>:</strong> Specialized modeling for TCR-pMHC interactions</li>
+              </ul>
               <p class="tutorial-text">
-                The website identifies HLA positions where <strong>at least one atom</strong> of an HLA amino acid 
+                For each unique TCR-peptide-HLA combination, only the structure with the <strong>best ipTM score</strong> (Interface Predicted Template Modeling) is retained, ensuring high-quality structural data for contact analysis.
+              </p>
+
+              <p class="tutorial-text">
+                The website identifies HLA positions where <strong>at least one atom</strong> of an HLA amino acid
                 is within <strong>X Angstroms</strong> of at least one atom of a peptide and/or TCR amino acid.
               </p>
             </div>
@@ -83,7 +89,7 @@
               <ul class="mt-2">
                 <li>Calculate c-HED and t-HED between HLA-A and HLA-B alleles</li>
                 <li>Filter positions based on interaction types (Peptide, TCR, or both)</li>
-                <li>Apply distance thresholds (2.0-7.5 Å) and frequency to select HLA positions based on your criteria</li>
+                <li>Apply distance thresholds (2.0-5.0 Å) and quantile filters to select HLA positions based on your criteria</li>
                 <li>Visualize sequence positions and amino acid mismatches with comprehensive visualization of interactions</li>
                 <li>Explore filtered positions in interactive 3D molecular structures</li>
                 <li>Perform batch analysis on multiple allele pairs to calculate t-HED on your cohort</li>
@@ -103,11 +109,11 @@
           </v-card-title>
           <v-card-text>
             <p class="tutorial-text">
-              The main interface is divided into two tabs: <strong>Exploration</strong> and <strong>Batch Calculation</strong>.
+              The main interface is divided into two tabs: <strong>Divergence Calculation</strong> and <strong>Batch Calculation</strong>.
             </p>
             
             <div class="interface-section">
-              <h3 class="subsection-title">🔍 Exploration Mode</h3>
+              <h3 class="subsection-title">🔍 Divergence Calculation Mode</h3>
               <p>Interactive analysis of HLA allele pairs with real-time visualization:</p>
               <ul class="feature-list">
                 <li><strong>Parameter Control:</strong> Adjust distance thresholds, interaction types, and entropy filters</li>
@@ -146,34 +152,31 @@
             <div class="structures-overview">
               <h3 class="subsection-title">📊 Database Overview</h3>
               <p class="tutorial-text">
-                Our database contains structures from multiple sources, organized in an interactive table 
+                Our database contains curated HLA-TCR-peptide complex structures organized in an interactive table
                 with powerful filtering and export capabilities.
               </p>
             </div>
 
-            <div class="structures-tabs">
-              <h3 class="subsection-title">📂 Two Main Tabs</h3>
-              
-              <div class="tab-explanation">
-                <h4>🗄️ VDJdb Structures</h4>
-                <p class="tutorial-text">
-                  Contains structures derived from the <strong>VDJdb database</strong> and processed through <strong>TCRmodel2</strong>:
-                </p>
-                <ul class="feature-list">
-                  <li>Modeled HLA-TCR-peptide complexes</li>
-                  <li>Based on experimentally validated TCR sequences</li>
-                  <li>Directly downloadable for external analysis</li>
-                </ul>
-              </div>
+            <div class="structures-sources">
+              <h3 class="subsection-title">🔬 Structure Sources</h3>
 
-              <div class="tab-explanation">
-                <h4>🏛️ PDB Structures</h4>
+              <div class="source-explanation">
+                <h4>📐 Computational Structure Predictions</h4>
                 <p class="tutorial-text">
-                  Contains experimentally determined structures from the <strong>Protein Data Bank (PDB)</strong>:
+                  All structures in our database are derived from TCR sequences in the
+                  <a href="https://www.nature.com/articles/s41592-022-01578-0" target="_blank" class="publication-link"><strong>VDJdb database</strong></a>
+                  and generated using two complementary computational methods:
                 </p>
                 <ul class="feature-list">
-                  <li>Crystal and NMR structures of HLA-TCR-peptide complexes</li>
+                  <li><strong>AlphaFold3:</strong> Deep learning-based structure prediction for protein complexes</li>
+                  <li><strong>TCRmodel2:</strong> Specialized TCR-pMHC complex modeling</li>
                 </ul>
+
+                <v-alert type="info" variant="tonal" class="my-4">
+                  <strong>Quality Control:</strong> For each unique TCR-peptide-HLA combination, only the structure with the
+                  <strong>highest ipTM score</strong> (Interface Predicted Template Modeling) is retained, ensuring that
+                  contact analysis is performed on the most reliable structural models.
+                </v-alert>
               </div>
             </div>
 
@@ -359,17 +362,18 @@
                   
                   <div class="parameter-item">
                     <h4>Distance Threshold (Å)</h4>
-                    <p>Maximum distance between residues to consider them in contact (2.0 - 7.5 Å).</p>
+                    <p>Maximum distance between residues to consider them in contact (2.0 - 5.0 Å).</p>
                     <v-chip color="info" size="small">Recommended: 3.0-4.0 Å</v-chip>
                   </div>
                 </v-col>
                 
                 <v-col cols="12" md="6">
                   <div class="parameter-item">
-                    <h4>Frequency (%)</h4>
-                    <p>Minimum percentage of structures where the interaction must be observed (0-100%).</p>
+                    <h4>Quantile Filter (q)</h4>
+                    <p>Select positions based on their contact frequency quantile (0.0-1.0).</p>
+                    <v-chip color="info" size="small">Recommended: q = 0.5 (median)</v-chip>
                   </div>
-                  
+
                   <div class="parameter-item">
                     <h4>Interaction Type</h4>
                     <p>Filter positions based on interaction partners:</p>
@@ -383,32 +387,33 @@
                 </v-col>
               </v-row>
 
-              <div class="percentage-section">
-                <h3 class="subsection-title">📊 Understanding the Frequency Filter</h3>
+              <div class="quantile-section">
+                <h3 class="subsection-title">📊 Understanding the Quantile Filter</h3>
                 <p class="tutorial-text">
-                  The frequency parameter allows you to select positions that show contact in at least X% of structures in our database.
+                  The quantile parameter (q) allows you to select positions based on their relative contact frequency ranking.
+                  A quantile of q means keeping only positions that are contacted more frequently than q × 100% of all positions.
                 </p>
-                
+
                 <v-alert type="warning" variant="tonal" class="my-4">
-                  <strong>Example:</strong> Let's say we have 100 structures in our database for HLA-A analysis:
+                  <strong>Example:</strong> If positions have different contact frequencies across structures:
                   <ul class="mt-2">
-                    <li><strong>Position 65:</strong> Shows peptide contact in 85 structures → 85% frequency</li>
-                    <li><strong>Position 123:</strong> Shows TCR contact in 25 structures → 25% frequency</li>
-                    <li><strong>Position 187:</strong> Shows contact in 10 structures → 10% frequency</li>
+                    <li><strong>Position 65:</strong> Contacted in 85% of structures (high frequency)</li>
+                    <li><strong>Position 123:</strong> Contacted in 50% of structures (medium frequency)</li>
+                    <li><strong>Position 187:</strong> Contacted in 10% of structures (low frequency)</li>
                   </ul>
                   <br>
-                  <strong>With a 20% threshold:</strong> Positions 65 and 123 would be included, but position 187 would be excluded.
+                  <strong>With q = 0.5 (median):</strong> Only positions with above-median contact frequency are included (positions 65 and 123).
                   <br>
-                  <strong>With a 50% threshold:</strong> Only position 65 would be included.
+                  <strong>With q = 0.75:</strong> Only positions in the top 25% of contact frequency are included (position 65 only).
                 </v-alert>
-                
+
                 <p class="tutorial-text">
-                  This frequency filter allows you to focus on:
+                  The quantile filter allows you to focus on:
                 </p>
                 <ul class="feature-list">
-                  <li><strong>High percentage (50-80%):</strong> Core binding sites, highly conserved contact positions</li>
-                  <li><strong>Medium percentage (20-50%):</strong> Moderately important positions, context-dependent contacts</li>
-                  <li><strong>Low percentage (5-20%):</strong> Variable positions, allele-specific or rare contacts</li>
+                  <li><strong>High quantile (q = 0.75-0.9):</strong> Core binding sites, most consistently contacted positions</li>
+                  <li><strong>Medium quantile (q = 0.5):</strong> Positions with above-average contact frequency</li>
+                  <li><strong>Low quantile (q = 0.25):</strong> Include more variable positions, broader coverage</li>
                 </ul>
               </div>
             </div>
@@ -670,6 +675,86 @@
           </v-card-text>
         </v-card>
       </div>
+
+      <!-- Section 10: Position Distance Analysis -->
+      <div :id="'section-' + sections[9].id" class="tutorial-section">
+        <v-card class="tutorial-card">
+          <v-card-title class="section-title">
+            <v-icon color="primary" class="mr-2">{{ sections[9].icon }}</v-icon>
+            {{ sections[9].title }}
+          </v-card-title>
+          <v-card-text>
+            <p class="tutorial-text">
+              When you click on a specific HLA position in the sequence visualization, you can access detailed
+              distance distribution analysis through three complementary charts. This feature helps you understand
+              the structural context of each contact position.
+            </p>
+
+            <div class="distance-analysis-section">
+              <h3 class="subsection-title">📊 Three Analysis Charts</h3>
+
+              <div class="chart-explanation">
+                <h4>1. Global Distribution</h4>
+                <p class="tutorial-text">
+                  Shows the overall distribution of minimum distances (in Angstroms) between the selected HLA position
+                  and its interaction partners across all structures in the database.
+                </p>
+                <ul class="feature-list">
+                  <li><strong>X-axis:</strong> Distance in Angstroms (Å)</li>
+                  <li><strong>Y-axis:</strong> Probability density (KDE - Kernel Density Estimation)</li>
+                  <li><strong>Interpretation:</strong> A peak at low distances indicates consistent close contacts; wide distributions suggest variable binding modes</li>
+                </ul>
+              </div>
+
+              <div class="chart-explanation">
+                <h4>2. Distribution by Target</h4>
+                <p class="tutorial-text">
+                  Compares the distance distributions separately for <strong>Peptide</strong> and <strong>TCR</strong> contacts.
+                  This helps identify whether a position primarily contacts the peptide, the TCR, or both.
+                </p>
+                <ul class="feature-list">
+                  <li><strong>Red curve:</strong> Distances to Peptide residues</li>
+                  <li><strong>Teal curve:</strong> Distances to TCR residues</li>
+                  <li><strong>Interpretation:</strong> Non-overlapping curves indicate distinct interaction roles; overlapping curves suggest dual function</li>
+                </ul>
+              </div>
+
+              <div class="chart-explanation">
+                <h4>3. Distribution by Amino Acid</h4>
+                <p class="tutorial-text">
+                  Shows how the distance distribution varies depending on which amino acid is present at the HLA position
+                  across different alleles. This reveals allele-specific binding patterns.
+                </p>
+                <ul class="feature-list">
+                  <li><strong>Multiple curves:</strong> Each color represents a different amino acid found at this position</li>
+                  <li><strong>Interpretation:</strong> Similar curves across amino acids suggest position-driven contacts; divergent curves indicate amino acid-specific interactions</li>
+                </ul>
+
+                <v-alert type="success" variant="tonal" class="my-4">
+                  <strong>💡 Practical Use:</strong> If two amino acids show very different distance profiles at a position,
+                  this could explain why allele pairs differing at this position have distinct functional properties.
+                </v-alert>
+              </div>
+            </div>
+
+            <div class="distance-access-section">
+              <h3 class="subsection-title">🖱️ How to Access</h3>
+              <ol class="access-steps">
+                <li>Navigate to the <strong>Divergence Calculation</strong> tab in the HLA Analysis page</li>
+                <li>Set your analysis parameters and click <strong>Analyze</strong></li>
+                <li>In the sequence visualization, click on any <strong>position chip</strong> (colored boxes)</li>
+                <li>Switch to the <strong>"Distance Analysis"</strong> tab in the position detail panel</li>
+                <li>The three charts will load automatically for the selected position</li>
+              </ol>
+            </div>
+
+            <v-alert type="info" variant="tonal" class="my-4">
+              <strong>📝 Note:</strong> Distance data is computed from all structures in the database for the selected locus.
+              The number of structures contributing to each analysis is displayed in the chart headers.
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </div>
     </div>
 
     <!-- Bouton pour remonter en haut -->
@@ -737,15 +822,20 @@ export default {
           id: 'advanced',
           title: 'Advanced Features',
           icon: 'mdi-cog'
+        },
+        {
+          id: 'position-distances',
+          title: 'Position Distance Analysis',
+          icon: 'mdi-chart-bell-curve-cumulative'
         }
       ],
       workflowSteps: [
         {
           title: 'Set Parameters',
-          description: 'Choose your HLA locus, distance threshold, frequency, and interaction type.',
+          description: 'Choose your HLA locus, distance threshold, quantile filter, and interaction type.',
           icon: 'mdi-tune',
           color: 'primary',
-          tip: 'Start with default values (A, 3.0Å, 20%, Peptide or TCR)'
+          tip: 'Start with default values (A, 3.0Å, q=0.5, Peptide or TCR)'
         },
         {
           title: 'Select Alleles',
@@ -1080,7 +1170,7 @@ export default {
 /* Nouvelles sections pour l'introduction détaillée */
 .concept-section,
 .database-section,
-.percentage-section {
+.quantile-section {
   margin: 1.5rem 0;
   padding: 1.2rem;
   border-radius: 6px;
@@ -1097,14 +1187,14 @@ export default {
   border-left-color: #4caf50;
 }
 
-.percentage-section {
+.quantile-section {
   background: linear-gradient(135deg, rgba(255, 152, 0, 0.04) 0%, rgba(255, 152, 0, 0.08) 100%);
   border-left-color: #ff9800;
 }
 
 .concept-section h3,
 .database-section h3,
-.percentage-section h3 {
+.quantile-section h3 {
   margin-top: 0;
   margin-bottom: 1rem;
   color: #2c3e50;
@@ -1128,12 +1218,12 @@ export default {
   text-decoration: underline;
 }
 
-.percentage-section .feature-list {
+.quantile-section .feature-list {
   margin-left: 0;
   padding-left: 1.5rem;
 }
 
-.percentage-section .feature-list li {
+.quantile-section .feature-list li {
   margin: 0.8rem 0;
   line-height: 1.4;
   color: #444;
@@ -1384,6 +1474,79 @@ export default {
 
 .scroll-top-btn {
   position: fixed !important;
+}
+
+/* Styles pour la section Structures Sources */
+.structures-sources {
+  margin: 2rem 0;
+  background: rgba(33, 150, 243, 0.05);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+}
+
+.source-explanation {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.source-explanation h4 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Styles pour la section Position Distance Analysis */
+.distance-analysis-section {
+  margin: 2rem 0;
+}
+
+.chart-explanation {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: rgba(255, 152, 0, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #ff9800;
+}
+
+.chart-explanation h4 {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.chart-explanation p {
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.distance-access-section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: rgba(76, 175, 80, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+.distance-access-section h3 {
+  margin-top: 0;
+}
+
+.access-steps {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.access-steps li {
+  margin: 0.8rem 0;
+  line-height: 1.5;
+  color: #444;
 }
 
 /* Responsive */

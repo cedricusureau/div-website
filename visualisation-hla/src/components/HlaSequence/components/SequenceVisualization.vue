@@ -315,28 +315,27 @@
         </v-tab>
       </v-tabs>
 
-      <v-window v-model="activeAnalysisTab" class="tab-content">
+      <!-- Tab Content (using v-show instead of v-window to avoid scroll issues) -->
+      <div class="tab-content">
         <!-- Sankey Diagram Tab -->
-        <v-window-item value="interactions" eager>
-          <div class="tab-panel">
-            <PeptideInteractionsSankey
-              :filteredContactData="filteredContactData"
-              :selectedPositions="selectedPositions"
-              :totalStructures="totalStructure"
-            />
-          </div>
-        </v-window-item>
+        <div v-show="activeAnalysisTab === 'interactions'" class="tab-panel">
+          <PeptideInteractionsSankey
+            :filteredContactData="filteredContactData"
+            :selectedPositions="selectedPositions"
+            :totalStructures="totalStructure"
+          />
+        </div>
 
         <!-- Distance Analysis Tab -->
-        <v-window-item value="distances" eager>
-          <div class="tab-panel">
-            <PositionDistanceCharts
-              :locus="currentLocus"
-              :position="parseInt(selectedPositions[0])"
-            />
-          </div>
-        </v-window-item>
-      </v-window>
+        <div v-show="activeAnalysisTab === 'distances'" class="tab-panel">
+          <PositionDistanceCharts
+            :locus="currentLocus"
+            :position="parseInt(selectedPositions[0])"
+            :contactMode="contactMode"
+            :isVisible="activeAnalysisTab === 'distances'"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- No Selection Message -->
@@ -388,6 +387,11 @@ export default {
     currentLocus: {
       type: String,
       default: 'A'
+    },
+    contactMode: {
+      type: String,
+      default: 'either',
+      validator: (value) => ['either', 'tcr', 'peptide'].includes(value)
     }
   },
   data() {
@@ -456,15 +460,7 @@ export default {
       },
       immediate: true
     },
-    activeAnalysisTab: {
-      handler() {
-        // Preserve scroll position when switching tabs
-        const scrollY = window.scrollY;
-        this.$nextTick(() => {
-          window.scrollTo(0, scrollY);
-        });
-      }
-    }
+    // No watcher needed - v-show doesn't cause scroll issues
   },
   mounted() {
     // Charger les allèles au montage du composant

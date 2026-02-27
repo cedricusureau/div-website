@@ -118,7 +118,7 @@
         <v-row dense class="mt-2">
           <v-col cols="12">
             <div class="slider-group">
-              <label class="slider-label">Quantile: {{ formParams.quantile.toFixed(2) }}</label>
+              <label class="slider-label">Interaction frequency (in quantile q): {{ formParams.quantile.toFixed(2) }}</label>
               <v-slider
                 :model-value="formParams.quantile"
                 @update:model-value="updateParam('quantile', $event)"

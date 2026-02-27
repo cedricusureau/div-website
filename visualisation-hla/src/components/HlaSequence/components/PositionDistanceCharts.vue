@@ -14,28 +14,30 @@
     </div>
 
     <!-- Charts -->
-    <template v-else-if="positionData.length > 0">
+    <template v-else-if="filteredData.length > 0">
       <!-- Global Distribution -->
       <div class="chart-card">
         <div class="chart-header">
           <h4>Global Distribution</h4>
-          <p class="chart-subtitle">All structures combined (n={{ positionData.length }})</p>
+          <p class="chart-subtitle">{{ modeLabel }} (n={{ uniqueStructureCount }} structures)</p>
         </div>
         <GlobalDistributionChart
-          :data="positionData"
+          :data="filteredData"
           :position="positionLabel"
+          :isVisible="isVisible"
         />
       </div>
 
-      <!-- Target Breakdown -->
-      <div class="chart-card">
+      <!-- Target Breakdown (only shown in 'either' mode) -->
+      <div v-if="contactMode === 'either'" class="chart-card">
         <div class="chart-header">
           <h4>Distribution by Target</h4>
           <p class="chart-subtitle">Peptide vs TCR Comparison</p>
         </div>
         <TargetBreakdownChart
-          :data="positionData"
+          :data="filteredData"
           :position="positionLabel"
+          :isVisible="isVisible"
         />
       </div>
 
@@ -46,8 +48,9 @@
           <p class="chart-subtitle">Overlaid KDE by amino acid present at this position</p>
         </div>
         <AminoAcidBreakdownChart
-          :data="positionData"
+          :data="filteredData"
           :position="positionLabel"
+          :isVisible="isVisible"
         />
       </div>
     </template>
@@ -79,6 +82,15 @@ const props = defineProps({
     type: Number,
     required: true,
     validator: (value) => value >= 1 && value <= 182
+  },
+  contactMode: {
+    type: String,
+    default: 'either',
+    validator: (value) => ['either', 'tcr', 'peptide'].includes(value)
+  },
+  isVisible: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -89,6 +101,32 @@ const positionData = ref([]);
 
 // Computed
 const positionLabel = computed(() => `${props.position}:${props.locus}`);
+
+// Filtrer les données selon le mode de contact
+const filteredData = computed(() => {
+  if (props.contactMode === 'either') {
+    return positionData.value;
+  } else if (props.contactMode === 'tcr') {
+    return positionData.value.filter(d => d.target === 'TCR');
+  } else if (props.contactMode === 'peptide') {
+    return positionData.value.filter(d => d.target === 'Peptide');
+  }
+  return positionData.value;
+});
+
+// Label du mode pour l'affichage (utilisé dans le template)
+// eslint-disable-next-line no-unused-vars
+const modeLabel = computed(() => {
+  if (props.contactMode === 'tcr') return 'TCR only';
+  if (props.contactMode === 'peptide') return 'Peptide only';
+  return 'Peptide + TCR';
+});
+
+// Nombre de structures uniques (basé sur les données filtrées)
+const uniqueStructureCount = computed(() => {
+  const structureIds = new Set(filteredData.value.map(d => d.structure_id));
+  return structureIds.size;
+});
 
 /**
  * Charge les données de distance pour la position et le locus

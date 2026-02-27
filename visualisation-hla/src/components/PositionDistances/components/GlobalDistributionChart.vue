@@ -29,6 +29,10 @@ const props = defineProps({
   position: {
     type: String,
     required: true
+  },
+  isVisible: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -57,6 +61,9 @@ const stats = computed(() => {
  */
 const renderChart = () => {
   if (!chartContainer.value || uniqueDistances.value.length === 0) return
+
+  // Skip render if container has no width (tab hidden)
+  if (chartContainer.value.clientWidth === 0) return
 
   // Clear previous chart
   d3.select(chartContainer.value).selectAll('*').remove()
@@ -206,6 +213,15 @@ watch(() => props.data, async () => {
   await nextTick()
   renderChart()
 }, { deep: true })
+
+// Re-render when tab becomes visible
+watch(() => props.isVisible, async (newVal) => {
+  if (newVal) {
+    await nextTick()
+    // Small delay to ensure container has proper dimensions
+    setTimeout(() => renderChart(), 50)
+  }
+})
 
 /**
  * Lifecycle
